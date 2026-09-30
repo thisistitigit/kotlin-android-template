@@ -1,0 +1,1019 @@
+{
+  "formatVersion": 1,
+  "database": {
+    "version": 1,
+    "identityHash": "161fc5200a15452463c3ceb3bedb6631",
+    "entities": [
+      {
+        "tableName": "players",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`player_id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `name` TEXT NOT NULL, `photo_uri` TEXT, `created_at_epoch_millis` INTEGER NOT NULL)",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "player_id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "name",
+            "columnName": "name",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "photoUri",
+            "columnName": "photo_uri",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "createdAtEpochMillis",
+            "columnName": "created_at_epoch_millis",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "player_id"
+          ]
+        }
+      },
+      {
+        "tableName": "game_modes",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`game_mode_id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `type` TEXT NOT NULL, `description` TEXT NOT NULL)",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "game_mode_id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "type",
+            "columnName": "type",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "description",
+            "columnName": "description",
+            "affinity": "TEXT",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "game_mode_id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_game_modes_type",
+            "unique": true,
+            "columnNames": [
+              "type"
+            ],
+            "orders": [],
+            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `index_game_modes_type` ON `${TABLE_NAME}` (`type`)"
+          }
+        ]
+      },
+      {
+        "tableName": "games",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`game_id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `status` TEXT NOT NULL, `player_count` INTEGER NOT NULL, `impostor_count` INTEGER NOT NULL, `include_mr_white` INTEGER NOT NULL, `created_at` INTEGER NOT NULL, `finished_at` INTEGER)",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "game_id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "status",
+            "columnName": "status",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "playerCount",
+            "columnName": "player_count",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "impostorCount",
+            "columnName": "impostor_count",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "includeMrWhite",
+            "columnName": "include_mr_white",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "createdAt",
+            "columnName": "created_at",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "finishedAt",
+            "columnName": "finished_at",
+            "affinity": "INTEGER"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "game_id"
+          ]
+        }
+      },
+      {
+        "tableName": "game_players",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`game_player_id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `game_id` INTEGER NOT NULL, `player_id` INTEGER NOT NULL, `seat_order` INTEGER NOT NULL, FOREIGN KEY(`game_id`) REFERENCES `games`(`game_id`) ON UPDATE NO ACTION ON DELETE CASCADE , FOREIGN KEY(`player_id`) REFERENCES `players`(`player_id`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "game_player_id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "gameId",
+            "columnName": "game_id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "playerId",
+            "columnName": "player_id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "seatOrder",
+            "columnName": "seat_order",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "game_player_id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_game_players_game_id",
+            "unique": false,
+            "columnNames": [
+              "game_id"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_game_players_game_id` ON `${TABLE_NAME}` (`game_id`)"
+          },
+          {
+            "name": "index_game_players_player_id",
+            "unique": false,
+            "columnNames": [
+              "player_id"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_game_players_player_id` ON `${TABLE_NAME}` (`player_id`)"
+          },
+          {
+            "name": "index_game_players_game_id_player_id",
+            "unique": true,
+            "columnNames": [
+              "game_id",
+              "player_id"
+            ],
+            "orders": [],
+            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `index_game_players_game_id_player_id` ON `${TABLE_NAME}` (`game_id`, `player_id`)"
+          }
+        ],
+        "foreignKeys": [
+          {
+            "table": "games",
+            "onDelete": "CASCADE",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "game_id"
+            ],
+            "referencedColumns": [
+              "game_id"
+            ]
+          },
+          {
+            "table": "players",
+            "onDelete": "CASCADE",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "player_id"
+            ],
+            "referencedColumns": [
+              "player_id"
+            ]
+          }
+        ]
+      },
+      {
+        "tableName": "rounds",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`round_id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `game_id` INTEGER NOT NULL, `game_mode_id` INTEGER NOT NULL, `content_set_id` INTEGER, `round_number` INTEGER NOT NULL, `status` TEXT NOT NULL, `started_at` INTEGER NOT NULL, `finished_at` INTEGER, FOREIGN KEY(`game_id`) REFERENCES `games`(`game_id`) ON UPDATE NO ACTION ON DELETE CASCADE , FOREIGN KEY(`game_mode_id`) REFERENCES `game_modes`(`game_mode_id`) ON UPDATE NO ACTION ON DELETE RESTRICT , FOREIGN KEY(`content_set_id`) REFERENCES `content_sets`(`content_set_id`) ON UPDATE NO ACTION ON DELETE SET NULL )",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "round_id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "gameId",
+            "columnName": "game_id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "gameModeId",
+            "columnName": "game_mode_id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "contentSetId",
+            "columnName": "content_set_id",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "roundNumber",
+            "columnName": "round_number",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "status",
+            "columnName": "status",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "startedAt",
+            "columnName": "started_at",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "finishedAt",
+            "columnName": "finished_at",
+            "affinity": "INTEGER"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "round_id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_rounds_game_id",
+            "unique": false,
+            "columnNames": [
+              "game_id"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_rounds_game_id` ON `${TABLE_NAME}` (`game_id`)"
+          },
+          {
+            "name": "index_rounds_game_mode_id",
+            "unique": false,
+            "columnNames": [
+              "game_mode_id"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_rounds_game_mode_id` ON `${TABLE_NAME}` (`game_mode_id`)"
+          },
+          {
+            "name": "index_rounds_content_set_id",
+            "unique": false,
+            "columnNames": [
+              "content_set_id"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_rounds_content_set_id` ON `${TABLE_NAME}` (`content_set_id`)"
+          },
+          {
+            "name": "index_rounds_game_id_round_number",
+            "unique": true,
+            "columnNames": [
+              "game_id",
+              "round_number"
+            ],
+            "orders": [],
+            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `index_rounds_game_id_round_number` ON `${TABLE_NAME}` (`game_id`, `round_number`)"
+          }
+        ],
+        "foreignKeys": [
+          {
+            "table": "games",
+            "onDelete": "CASCADE",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "game_id"
+            ],
+            "referencedColumns": [
+              "game_id"
+            ]
+          },
+          {
+            "table": "game_modes",
+            "onDelete": "RESTRICT",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "game_mode_id"
+            ],
+            "referencedColumns": [
+              "game_mode_id"
+            ]
+          },
+          {
+            "table": "content_sets",
+            "onDelete": "SET NULL",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "content_set_id"
+            ],
+            "referencedColumns": [
+              "content_set_id"
+            ]
+          }
+        ]
+      },
+      {
+        "tableName": "roles",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`role_id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `name` TEXT NOT NULL, `type` TEXT NOT NULL, `description` TEXT)",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "role_id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "name",
+            "columnName": "name",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "type",
+            "columnName": "type",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "description",
+            "columnName": "description",
+            "affinity": "TEXT"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "role_id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_roles_type",
+            "unique": true,
+            "columnNames": [
+              "type"
+            ],
+            "orders": [],
+            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `index_roles_type` ON `${TABLE_NAME}` (`type`)"
+          }
+        ]
+      },
+      {
+        "tableName": "content_packs",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`pack_id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `name` TEXT NOT NULL, `description` TEXT, `language` TEXT NOT NULL, `is_custom` INTEGER NOT NULL)",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "pack_id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "name",
+            "columnName": "name",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "description",
+            "columnName": "description",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "language",
+            "columnName": "language",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "isCustom",
+            "columnName": "is_custom",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "pack_id"
+          ]
+        }
+      },
+      {
+        "tableName": "content_sets",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`content_set_id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `pack_id` INTEGER NOT NULL, `description` TEXT, `game_mode_type` TEXT NOT NULL, `category` TEXT, FOREIGN KEY(`pack_id`) REFERENCES `content_packs`(`pack_id`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "content_set_id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "packId",
+            "columnName": "pack_id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "description",
+            "columnName": "description",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "gameModeType",
+            "columnName": "game_mode_type",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "category",
+            "columnName": "category",
+            "affinity": "TEXT"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "content_set_id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_content_sets_pack_id",
+            "unique": false,
+            "columnNames": [
+              "pack_id"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_content_sets_pack_id` ON `${TABLE_NAME}` (`pack_id`)"
+          }
+        ],
+        "foreignKeys": [
+          {
+            "table": "content_packs",
+            "onDelete": "CASCADE",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "pack_id"
+            ],
+            "referencedColumns": [
+              "pack_id"
+            ]
+          }
+        ]
+      },
+      {
+        "tableName": "contents",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`content_id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `content_set_id` INTEGER NOT NULL, `text` TEXT NOT NULL, `type` TEXT NOT NULL, `category` TEXT, FOREIGN KEY(`content_set_id`) REFERENCES `content_sets`(`content_set_id`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "content_id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "contentSetId",
+            "columnName": "content_set_id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "text",
+            "columnName": "text",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "type",
+            "columnName": "type",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "category",
+            "columnName": "category",
+            "affinity": "TEXT"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "content_id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_contents_content_set_id",
+            "unique": false,
+            "columnNames": [
+              "content_set_id"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_contents_content_set_id` ON `${TABLE_NAME}` (`content_set_id`)"
+          }
+        ],
+        "foreignKeys": [
+          {
+            "table": "content_sets",
+            "onDelete": "CASCADE",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "content_set_id"
+            ],
+            "referencedColumns": [
+              "content_set_id"
+            ]
+          }
+        ]
+      },
+      {
+        "tableName": "round_assignments",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`assignment_id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `round_id` INTEGER NOT NULL, `game_player_id` INTEGER NOT NULL, `role_id` INTEGER NOT NULL, `content_id` INTEGER, FOREIGN KEY(`round_id`) REFERENCES `rounds`(`round_id`) ON UPDATE NO ACTION ON DELETE CASCADE , FOREIGN KEY(`game_player_id`) REFERENCES `game_players`(`game_player_id`) ON UPDATE NO ACTION ON DELETE CASCADE , FOREIGN KEY(`role_id`) REFERENCES `roles`(`role_id`) ON UPDATE NO ACTION ON DELETE NO ACTION , FOREIGN KEY(`content_id`) REFERENCES `contents`(`content_id`) ON UPDATE NO ACTION ON DELETE SET NULL )",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "assignment_id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "roundId",
+            "columnName": "round_id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "gamePlayerId",
+            "columnName": "game_player_id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "roleId",
+            "columnName": "role_id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "contentId",
+            "columnName": "content_id",
+            "affinity": "INTEGER"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "assignment_id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_round_assignments_round_id",
+            "unique": false,
+            "columnNames": [
+              "round_id"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_round_assignments_round_id` ON `${TABLE_NAME}` (`round_id`)"
+          },
+          {
+            "name": "index_round_assignments_game_player_id",
+            "unique": false,
+            "columnNames": [
+              "game_player_id"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_round_assignments_game_player_id` ON `${TABLE_NAME}` (`game_player_id`)"
+          },
+          {
+            "name": "index_round_assignments_role_id",
+            "unique": false,
+            "columnNames": [
+              "role_id"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_round_assignments_role_id` ON `${TABLE_NAME}` (`role_id`)"
+          },
+          {
+            "name": "index_round_assignments_content_id",
+            "unique": false,
+            "columnNames": [
+              "content_id"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_round_assignments_content_id` ON `${TABLE_NAME}` (`content_id`)"
+          },
+          {
+            "name": "index_round_assignments_round_id_game_player_id",
+            "unique": true,
+            "columnNames": [
+              "round_id",
+              "game_player_id"
+            ],
+            "orders": [],
+            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `index_round_assignments_round_id_game_player_id` ON `${TABLE_NAME}` (`round_id`, `game_player_id`)"
+          }
+        ],
+        "foreignKeys": [
+          {
+            "table": "rounds",
+            "onDelete": "CASCADE",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "round_id"
+            ],
+            "referencedColumns": [
+              "round_id"
+            ]
+          },
+          {
+            "table": "game_players",
+            "onDelete": "CASCADE",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "game_player_id"
+            ],
+            "referencedColumns": [
+              "game_player_id"
+            ]
+          },
+          {
+            "table": "roles",
+            "onDelete": "NO ACTION",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "role_id"
+            ],
+            "referencedColumns": [
+              "role_id"
+            ]
+          },
+          {
+            "table": "contents",
+            "onDelete": "SET NULL",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "content_id"
+            ],
+            "referencedColumns": [
+              "content_id"
+            ]
+          }
+        ]
+      },
+      {
+        "tableName": "answers",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`answer_id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `round_id` INTEGER NOT NULL, `game_player_id` INTEGER NOT NULL, `answer_text` TEXT NOT NULL, `created_at` INTEGER NOT NULL, FOREIGN KEY(`round_id`) REFERENCES `rounds`(`round_id`) ON UPDATE NO ACTION ON DELETE CASCADE , FOREIGN KEY(`game_player_id`) REFERENCES `game_players`(`game_player_id`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "answer_id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "roundId",
+            "columnName": "round_id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "gamePlayerId",
+            "columnName": "game_player_id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "answerText",
+            "columnName": "answer_text",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "createdAt",
+            "columnName": "created_at",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "answer_id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_answers_round_id",
+            "unique": false,
+            "columnNames": [
+              "round_id"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_answers_round_id` ON `${TABLE_NAME}` (`round_id`)"
+          },
+          {
+            "name": "index_answers_game_player_id",
+            "unique": false,
+            "columnNames": [
+              "game_player_id"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_answers_game_player_id` ON `${TABLE_NAME}` (`game_player_id`)"
+          },
+          {
+            "name": "index_answers_round_id_game_player_id",
+            "unique": true,
+            "columnNames": [
+              "round_id",
+              "game_player_id"
+            ],
+            "orders": [],
+            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `index_answers_round_id_game_player_id` ON `${TABLE_NAME}` (`round_id`, `game_player_id`)"
+          }
+        ],
+        "foreignKeys": [
+          {
+            "table": "rounds",
+            "onDelete": "CASCADE",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "round_id"
+            ],
+            "referencedColumns": [
+              "round_id"
+            ]
+          },
+          {
+            "table": "game_players",
+            "onDelete": "CASCADE",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "game_player_id"
+            ],
+            "referencedColumns": [
+              "game_player_id"
+            ]
+          }
+        ]
+      },
+      {
+        "tableName": "votes",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`vote_id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `round_id` INTEGER NOT NULL, `voter_game_player_id` INTEGER NOT NULL, `voted_game_player_id` INTEGER NOT NULL, `created_at` INTEGER NOT NULL, FOREIGN KEY(`round_id`) REFERENCES `rounds`(`round_id`) ON UPDATE NO ACTION ON DELETE CASCADE , FOREIGN KEY(`voter_game_player_id`) REFERENCES `game_players`(`game_player_id`) ON UPDATE NO ACTION ON DELETE CASCADE , FOREIGN KEY(`voted_game_player_id`) REFERENCES `game_players`(`game_player_id`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "vote_id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "roundId",
+            "columnName": "round_id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "voterGamePlayerId",
+            "columnName": "voter_game_player_id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "votedGamePlayerId",
+            "columnName": "voted_game_player_id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "createdAt",
+            "columnName": "created_at",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "vote_id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_votes_round_id",
+            "unique": false,
+            "columnNames": [
+              "round_id"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_votes_round_id` ON `${TABLE_NAME}` (`round_id`)"
+          },
+          {
+            "name": "index_votes_voter_game_player_id",
+            "unique": false,
+            "columnNames": [
+              "voter_game_player_id"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_votes_voter_game_player_id` ON `${TABLE_NAME}` (`voter_game_player_id`)"
+          },
+          {
+            "name": "index_votes_voted_game_player_id",
+            "unique": false,
+            "columnNames": [
+              "voted_game_player_id"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_votes_voted_game_player_id` ON `${TABLE_NAME}` (`voted_game_player_id`)"
+          },
+          {
+            "name": "index_votes_round_id_voter_game_player_id",
+            "unique": true,
+            "columnNames": [
+              "round_id",
+              "voter_game_player_id"
+            ],
+            "orders": [],
+            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `index_votes_round_id_voter_game_player_id` ON `${TABLE_NAME}` (`round_id`, `voter_game_player_id`)"
+          }
+        ],
+        "foreignKeys": [
+          {
+            "table": "rounds",
+            "onDelete": "CASCADE",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "round_id"
+            ],
+            "referencedColumns": [
+              "round_id"
+            ]
+          },
+          {
+            "table": "game_players",
+            "onDelete": "CASCADE",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "voter_game_player_id"
+            ],
+            "referencedColumns": [
+              "game_player_id"
+            ]
+          },
+          {
+            "table": "game_players",
+            "onDelete": "CASCADE",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "voted_game_player_id"
+            ],
+            "referencedColumns": [
+              "game_player_id"
+            ]
+          }
+        ]
+      },
+      {
+        "tableName": "score_events",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`score_event_id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `round_id` INTEGER NOT NULL, `game_player_id` INTEGER NOT NULL, `points` INTEGER NOT NULL, `reason` TEXT NOT NULL, `created_at` INTEGER NOT NULL, FOREIGN KEY(`round_id`) REFERENCES `rounds`(`round_id`) ON UPDATE NO ACTION ON DELETE CASCADE , FOREIGN KEY(`game_player_id`) REFERENCES `game_players`(`game_player_id`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "score_event_id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "roundId",
+            "columnName": "round_id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "gamePlayerId",
+            "columnName": "game_player_id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "points",
+            "columnName": "points",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "reason",
+            "columnName": "reason",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "createdAt",
+            "columnName": "created_at",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "score_event_id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_score_events_round_id",
+            "unique": false,
+            "columnNames": [
+              "round_id"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_score_events_round_id` ON `${TABLE_NAME}` (`round_id`)"
+          },
+          {
+            "name": "index_score_events_game_player_id",
+            "unique": false,
+            "columnNames": [
+              "game_player_id"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_score_events_game_player_id` ON `${TABLE_NAME}` (`game_player_id`)"
+          }
+        ],
+        "foreignKeys": [
+          {
+            "table": "rounds",
+            "onDelete": "CASCADE",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "round_id"
+            ],
+            "referencedColumns": [
+              "round_id"
+            ]
+          },
+          {
+            "table": "game_players",
+            "onDelete": "CASCADE",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "game_player_id"
+            ],
+            "referencedColumns": [
+              "game_player_id"
+            ]
+          }
+        ]
+      }
+    ],
+    "setupQueries": [
+      "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '161fc5200a15452463c3ceb3bedb6631')"
+    ]
+  }
+}

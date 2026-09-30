@@ -1,0 +1,14 @@
+<resources>
+    <string name="app_name">Impostor</string>
+    <string name="impostor_logo_description">Impostor</string>
+    <string name="welcome_to">Welcome to</string>
+    <string name="gather_friends">Gather Your Friends</string>
+    <string name="choose_game">Choose The Game That\nSuits You The Most</string>
+    <string name="have_fun">Have Fun And Break Trust\nBonds</string>
+    <string name="next">Next</string>
+    <string name="get_started">Get Started</string>
+    <string name="new_game">New Game</string>
+    <string name="classic">Classic</string>
+    <string name="questions">Questions</string>
+    <string name="continue_label">Continue</string>
+</resources>

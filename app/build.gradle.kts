@@ -43,6 +43,8 @@ android {
         warningsAsErrors = true
         abortOnError = true
         disable.add("GradleDependency")
+        // Toolchain versions are intentionally kept compatible with SDK 36.
+        disable.add("AndroidGradlePluginVersion")
     }
 
     // Use this block to configure different flavors
@@ -68,6 +70,7 @@ tasks.withType<KotlinCompile>().configureEach {
 dependencies {
     implementation(projects.libraryAndroid)
     implementation(projects.libraryCompose)
+    implementation(projects.libraryData)
     implementation(projects.libraryKotlin)
 
     implementation(libs.androidx.appcompat)
