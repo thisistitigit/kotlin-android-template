@@ -84,7 +84,7 @@ private fun WelcomeContent() {
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Text(text = stringResource(R.string.welcome_to), style = MaterialTheme.typography.h5)
+        //Text(text = stringResource(R.string.welcome_to), style = MaterialTheme.typography.h5)
         Spacer(Modifier.height(Spacing.medium))
         Image(
             painter = painterResource(R.drawable.welcoming_logo),

@@ -27,26 +27,31 @@ fun PlayerAvatar(
     overlay: (@Composable BoxScope.() -> Unit)? = null
 ) {
     Box(
-        modifier = modifier
-            .clip(CircleShape)
-            .background(LightPurple)
-            .border(decoration.borderWidth, decoration.borderColor, CircleShape),
+        modifier = modifier,
         contentAlignment = Alignment.Center
     ) {
-        if (photo == null) {
-            Image(
-                painter = painterResource(avatarRes),
-                contentDescription = null,
-                contentScale = ContentScale.Crop,
-                modifier = Modifier.fillMaxSize()
-            )
-        } else {
-            Image(
-                bitmap = photo.asImageBitmap(),
-                contentDescription = null,
-                contentScale = ContentScale.Crop,
-                modifier = Modifier.fillMaxSize()
-            )
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .clip(CircleShape)
+                .background(LightPurple)
+                .border(decoration.borderWidth, decoration.borderColor, CircleShape)
+        ) {
+            if (photo == null) {
+                Image(
+                    painter = painterResource(avatarRes),
+                    contentDescription = null,
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier.fillMaxSize()
+                )
+            } else {
+                Image(
+                    bitmap = photo.asImageBitmap(),
+                    contentDescription = null,
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier.fillMaxSize()
+                )
+            }
         }
         overlay?.invoke(this)
     }

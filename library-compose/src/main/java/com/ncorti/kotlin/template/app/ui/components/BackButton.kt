@@ -19,12 +19,12 @@ import com.ncorti.kotlin.template.app.ui.theme.AppWhite
 fun BackButton(contentDescription: String, onClick: () -> Unit, modifier: Modifier = Modifier) {
     Box(
         modifier = modifier
-            .size(48.dp)
+            .size(38.dp)
             .semantics { this.contentDescription = contentDescription }
             .clickable(role = Role.Button, onClick = onClick),
         contentAlignment = Alignment.Center
     ) {
-        Canvas(Modifier.size(16.dp, 28.dp)) {
+        Canvas(Modifier.size(12.dp, 20.dp)) {
             drawLine(
                 AppWhite,
                 Offset(size.width, 0f),

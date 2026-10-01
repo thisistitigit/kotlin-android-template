@@ -9,24 +9,31 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.ncorti.kotlin.template.app.ui.theme.AppTextStyles
 import com.ncorti.kotlin.template.app.ui.theme.AppWhite
 import com.ncorti.kotlin.template.app.ui.theme.MainPurple
 
 @Composable
-fun TitleBanner(text: String, modifier: Modifier = Modifier) {
+fun TitleBanner(
+    text: String,
+    modifier: Modifier = Modifier,
+    height: Dp = DEFAULT_BANNER_HEIGHT
+) {
     Box(
-        modifier = modifier.fillMaxWidth().height(BANNER_HEIGHT),
+        modifier = modifier.fillMaxWidth().height(height),
         contentAlignment = Alignment.Center
     ) {
         Canvas(Modifier.matchParentSize()) {
-            val curve = size.height * CURVE_RATIO
+            val topEdge = size.height * TOP_EDGE_RATIO
+            val topControl = size.height * TOP_CONTROL_RATIO
+            val bottomControl = size.height * BOTTOM_CONTROL_RATIO
             val path = Path().apply {
-                moveTo(0f, curve)
-                quadraticTo(size.width / 2f, -curve, size.width, curve)
-                lineTo(size.width, size.height - curve)
-                quadraticTo(size.width / 2f, size.height + curve, 0f, size.height - curve)
+                moveTo(0f, topEdge)
+                quadraticTo(size.width / 2f, topControl, size.width, topEdge)
+                lineTo(size.width, size.height)
+                quadraticTo(size.width / 2f, bottomControl, 0f, size.height)
                 close()
             }
             drawPath(path, MainPurple)
@@ -34,6 +41,7 @@ fun TitleBanner(text: String, modifier: Modifier = Modifier) {
         Text(text = text, style = AppTextStyles.title, color = AppWhite)
     }
 }
-
-private val BANNER_HEIGHT = 150.dp
-private const val CURVE_RATIO = 0.2f
+private val DEFAULT_BANNER_HEIGHT = 150.dp
+private const val TOP_EDGE_RATIO = 0.2f
+private const val TOP_CONTROL_RATIO = -0.2f
+private const val BOTTOM_CONTROL_RATIO = 0.68f

@@ -18,6 +18,13 @@ object AppTextStyles {
     val labelsScroll = TextStyle(fontFamily = Poppins, fontWeight = FontWeight.Bold, fontSize = 20.sp)
     val scrollNumber = TextStyle(fontFamily = Poppins, fontWeight = FontWeight.Bold, fontSize = 40.sp)
     val chosenNumber = TextStyle(fontFamily = Poppins, fontWeight = FontWeight.Bold, fontSize = 64.sp)
+    val nickname = TextStyle(
+        brush = NicknameGradient,
+        fontFamily = Poppins,
+        fontWeight = FontWeight.Black,
+        fontSize = 54.sp,
+        lineHeight = 81.sp
+    )
 }
 
 val AppTypography = Typography(

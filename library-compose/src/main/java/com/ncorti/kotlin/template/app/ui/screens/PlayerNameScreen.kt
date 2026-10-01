@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -42,7 +43,6 @@ import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.ncorti.kotlin.template.app.ui.components.AppButton
 import com.ncorti.kotlin.template.app.ui.components.AppButtonStyle
 import com.ncorti.kotlin.template.app.ui.components.BackButton
@@ -106,7 +106,7 @@ fun PlayerNameScreen(
             onClick = callbacks.onBack,
             modifier = Modifier.align(Alignment.Start).padding(start = Spacing.small, top = Spacing.small)
         )
-        Spacer(Modifier.height(42.dp))
+        Spacer(Modifier.height(32.dp))
         Row(horizontalArrangement = Arrangement.Center) {
             Text(text = stringResource(R.string.player_label), style = AppTextStyles.title, color = AppWhite)
             Text(text = " ${state.playerIndex + 1}", style = AppTextStyles.title, color = MainPurple)
@@ -116,13 +116,16 @@ fun PlayerNameScreen(
             modifier = Modifier.fillMaxWidth().height(194.dp),
             contentAlignment = Alignment.Center
         ) {
-            TitleBanner(text = "", modifier = Modifier.fillMaxWidth())
+            TitleBanner(text = "", height = 194.dp, modifier = Modifier.fillMaxWidth())
             PlayerAvatar(
                 avatarRes = state.avatarRes,
                 photo = state.photo,
                 modifier = Modifier.size(126.dp)
             ) {
-                CameraButton(onClick = onTakePhoto, modifier = Modifier.align(Alignment.BottomEnd))
+                CameraButton(
+                    onClick = onTakePhoto,
+                    modifier = Modifier.align(Alignment.BottomEnd).offset(x = 8.dp, y = 8.dp)
+                )
             }
         }
         Spacer(Modifier.height(20.dp))
@@ -133,7 +136,7 @@ fun PlayerNameScreen(
                 focusManager.moveFocus(FocusDirection.Down)
                 if (state.nickname.isNotBlank()) callbacks.onContinue()
             },
-            modifier = Modifier.fillMaxWidth().padding(horizontal = Spacing.large)
+            modifier = Modifier.width(295.dp)
         )
         Spacer(Modifier.weight(1f))
         AppButton(
@@ -157,9 +160,9 @@ private fun NicknameField(
     BasicTextField(
         value = value,
         onValueChange = { onValueChange(it.take(MAX_NICKNAME_LENGTH)) },
-        modifier = modifier.height(76.dp),
+        modifier = modifier.height(81.dp),
         singleLine = true,
-        textStyle = AppTextStyles.chosenNumber.copy(fontSize = 52.sp, color = AppWhite, textAlign = TextAlign.Center),
+        textStyle = AppTextStyles.nickname.copy(textAlign = TextAlign.Center),
         cursorBrush = SolidColor(MainPurple),
         keyboardOptions = KeyboardOptions(
             capitalization = KeyboardCapitalization.Words,
@@ -171,8 +174,7 @@ private fun NicknameField(
                 if (value.isEmpty()) {
                     Text(
                         text = stringResource(R.string.nickname),
-                        style = AppTextStyles.chosenNumber.copy(fontSize = 52.sp),
-                        color = AppWhite.copy(alpha = 0.72f),
+                        style = AppTextStyles.nickname,
                         textAlign = TextAlign.Center
                     )
                 }
@@ -187,7 +189,7 @@ private fun CameraButton(onClick: () -> Unit, modifier: Modifier = Modifier) {
     val description = stringResource(R.string.take_photo)
     Box(
         modifier = modifier
-            .size(42.dp)
+            .size(32.dp)
             .clip(CircleShape)
             .background(MarkerYellow)
             .clickable(role = Role.Button, onClick = onClick)
@@ -210,5 +212,5 @@ private const val MAX_NICKNAME_LENGTH = 18
 @Preview(showBackground = true, backgroundColor = 0xFF222222)
 @Composable
 internal fun PlayerNamePreview() = TemplateTheme {
-    PlayerNameScreen(PlayerNameUiState(0, "", R.drawable.vibrent_1), PlayerNameCallbacks({}, {}, {}), {})
+    PlayerNameScreen(PlayerNameUiState(0, "Tiago", R.drawable.vibrent_1), PlayerNameCallbacks({}, {}, {}), {})
 }
