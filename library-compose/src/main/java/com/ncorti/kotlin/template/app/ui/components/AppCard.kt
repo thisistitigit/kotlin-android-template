@@ -11,6 +11,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.Dp
 import com.ncorti.kotlin.template.app.ui.theme.Spacing
 
 @Composable
@@ -18,13 +19,14 @@ fun AppCard(
     modifier: Modifier = Modifier,
     backgroundColor: Color = MaterialTheme.colors.primary,
     borderColor: Color = Color.Transparent,
+    contentPadding: Dp = Spacing.large,
     content: @Composable BoxScope.() -> Unit
 ) {
     Box(
         modifier = modifier
             .background(backgroundColor, MaterialTheme.shapes.medium)
             .border(BorderStroke(1.dp, borderColor), MaterialTheme.shapes.medium)
-            .padding(Spacing.large),
+            .padding(contentPadding),
         content = content
     )
 }

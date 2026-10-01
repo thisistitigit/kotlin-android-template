@@ -16,8 +16,9 @@ kotlin = "2.1.0"
 ksp = "2.1.0-1.0.29"
 min_sdk_version = "23"
 nexus_publish = "2.0.0"
-paparazzi = "2.0.0-alpha05"
+paparazzi = "2.0.0-alpha02"
 room = "2.7.2"
+lucide_icons = "2.2.1"
 target_sdk_version = "36"
 
 [libraries]
@@ -44,6 +45,7 @@ detekt_formatting = { module = "io.gitlab.arturbosch.detekt:detekt-formatting", 
 espresso_core = { module = "androidx.test.espresso:espresso-core", version.ref = "espresso_core" }
 agp = { module = "com.android.tools.build:gradle", version.ref = "agp" }
 kgp = { module = "org.jetbrains.kotlin:kotlin-gradle-plugin", version.ref = "kotlin" }
+lucide_icons = { module = "com.composables:icons-lucide-android", version.ref = "lucide_icons" }
 
 [plugins]
 detekt = { id = "io.gitlab.arturbosch.detekt", version.ref = "detekt" }

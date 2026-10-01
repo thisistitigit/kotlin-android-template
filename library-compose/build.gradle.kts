@@ -70,6 +70,7 @@ dependencies {
     implementation(libs.compose.ui.tooling)
     implementation(libs.compose.foundation)
     implementation(libs.compose.material)
+    implementation(libs.lucide.icons)
 
     testImplementation(libs.junit)
 

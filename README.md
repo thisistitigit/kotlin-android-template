@@ -4,7 +4,7 @@ Aplicação Android local para jogos sociais, escrita em Kotlin, Room e Jetpack 
 
 ## Executar e validar
 
-Usa o JBR 21 incluído no Android Studio para executar o Gradle e Android SDK 36. O bytecode da app continua configurado para Java 17. O projeto usa Kotlin 2.1, Room 2.7.2, KSP 2.1.0-1.0.29 e Paparazzi 2.0.0-alpha05; esta combinação mantém o compilador, Room, AGP e os previews alinhados. Em PowerShell:
+Usa o JBR 21 incluído no Android Studio para executar o Gradle e Android SDK 36. O bytecode da app continua configurado para Java 17. O projeto usa Kotlin 2.1, Room 2.7.2, KSP 2.1.0-1.0.29 e Paparazzi 2.0.0-alpha02; esta combinação mantém o compilador, Room, AGP e os previews alinhados. Em PowerShell:
 
 ```powershell
 $env:JAVA_HOME = 'C:/Program Files/Android/Android Studio/jbr'

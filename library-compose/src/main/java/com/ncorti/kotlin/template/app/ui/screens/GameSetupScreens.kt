@@ -8,6 +8,7 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
@@ -21,6 +22,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.Text
+import androidx.compose.material.Icon
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -32,10 +34,11 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.zIndex
 import com.ncorti.kotlin.template.app.ui.components.AppButton
 import com.ncorti.kotlin.template.app.ui.components.AppButtonStyle
 import com.ncorti.kotlin.template.app.ui.components.AppCard
-import com.ncorti.kotlin.template.app.ui.components.BackButton
+import com.ncorti.kotlin.template.app.ui.components.AppHeader
 import com.ncorti.kotlin.template.app.ui.components.NumberSelector
 import com.ncorti.kotlin.template.app.ui.components.NumberSummaryPosition
 import com.ncorti.kotlin.template.app.ui.components.RoleOption
@@ -51,6 +54,7 @@ import com.ncorti.kotlin.template.app.ui.theme.MainPurple
 import com.ncorti.kotlin.template.app.ui.theme.Spacing
 import com.ncorti.kotlin.template.app.ui.theme.TemplateTheme
 import com.ncorti.kotlin.template.library.compose.R
+import com.composables.icons.lucide.R as LucideR
 import com.ncorti.kotlin.template.library.domain.enums.GameModeType
 import com.ncorti.kotlin.template.library.domain.enums.RoleType
 
@@ -166,45 +170,45 @@ fun PlayerTurnScreen(
     onSeeContent: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    Column(
-        modifier = modifier.fillMaxSize().padding(horizontal = Spacing.small),
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        BackButton(
-            contentDescription = stringResource(R.string.back),
-            onClick = onBack,
-            modifier = Modifier.align(Alignment.Start)
-        )
-        Spacer(Modifier.height(44.dp))
-        Row(horizontalArrangement = Arrangement.Center) {
-            Text(text = state.currentPlayer.name.uppercase(), style = AppTextStyles.title, color = AppWhite)
-            Text(text = stringResource(R.string.turn_suffix), style = AppTextStyles.title, color = MainPurple)
+    BoxWithConstraints(modifier = modifier.fillMaxSize().background(AppBackground)) {
+        val compact = maxHeight < COMPACT_HEIGHT
+        Column(
+            modifier = Modifier.fillMaxSize().padding(horizontal = Spacing.medium),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            AppHeader(onBack = onBack)
+            Spacer(Modifier.height(if (compact) Spacing.small else Spacing.large))
+            Row(horizontalArrangement = Arrangement.Center) {
+                Text(text = state.currentPlayer.name.uppercase(), style = AppTextStyles.title, color = AppWhite)
+                Text(text = stringResource(R.string.turn_suffix), style = AppTextStyles.title, color = MainPurple)
+            }
+            Text(
+                text = stringResource(R.string.pass_phone_to, state.currentPlayer.name),
+                style = androidx.compose.material.MaterialTheme.typography.body1,
+                color = AppWhite.copy(alpha = 0.82f)
+            )
+            Image(
+                painter = painterResource(state.catRes),
+                contentDescription = null,
+                contentScale = ContentScale.Fit,
+                modifier = Modifier.size(if (compact) 210.dp else 292.dp)
+            )
+            Spacer(Modifier.weight(1f))
+            ViewedPlayersCard(
+                viewedPlayers = state.viewedPlayers,
+                currentPlayer = state.currentPlayer,
+                compact = compact,
+                modifier = Modifier.fillMaxWidth()
+            )
+            Spacer(Modifier.height(if (compact) Spacing.medium else 30.dp))
+            AppButton(
+                text = state.actionLabel,
+                onClick = onSeeContent,
+                style = AppButtonStyle.SECONDARY,
+                modifier = Modifier.width(172.dp)
+            )
+            Spacer(Modifier.height(Spacing.medium))
         }
-        Text(
-            text = stringResource(R.string.pass_phone_to, state.currentPlayer.name),
-            style = androidx.compose.material.MaterialTheme.typography.body1,
-            color = AppWhite.copy(alpha = 0.82f)
-        )
-        Image(
-            painter = painterResource(state.catRes),
-            contentDescription = null,
-            contentScale = ContentScale.Fit,
-            modifier = Modifier.size(292.dp).padding(top = Spacing.medium)
-        )
-        Spacer(Modifier.weight(1f))
-        ViewedPlayersCard(
-            viewedPlayers = state.viewedPlayers,
-            currentPlayer = state.currentPlayer,
-            modifier = Modifier.fillMaxWidth()
-        )
-        Spacer(Modifier.height(30.dp))
-        AppButton(
-            text = state.actionLabel,
-            onClick = onSeeContent,
-            style = AppButtonStyle.SECONDARY,
-            modifier = Modifier.width(172.dp)
-        )
-        Spacer(Modifier.height(Spacing.extraLarge))
     }
 }
 
@@ -212,45 +216,69 @@ fun PlayerTurnScreen(
 private fun ViewedPlayersCard(
     viewedPlayers: List<TurnPlayerUi>,
     currentPlayer: TurnPlayerUi,
+    compact: Boolean,
     modifier: Modifier = Modifier
 ) {
     AppCard(
-        modifier = modifier.height(192.dp),
-        backgroundColor = DeepPurple
+        modifier = modifier.height(if (compact) 150.dp else 182.dp),
+        backgroundColor = DeepPurple,
+        contentPadding = Spacing.medium
     ) {
         Row(
             modifier = Modifier.fillMaxSize(),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            Row(modifier = Modifier.width(142.dp), verticalAlignment = Alignment.CenterVertically) {
-                viewedPlayers.take(MAX_VISIBLE_VIEWED_PLAYERS).forEachIndexed { index, player ->
-                    Box(modifier = Modifier.offset(x = (-12 * index).dp)) {
-                        PlayerAvatar(
-                            avatarRes = player.avatarRes,
-                            photo = player.photo,
-                            decoration = PlayerAvatarDecoration(AppWhite, 2.dp),
-                            modifier = Modifier.size(58.dp)
-                        )
-                        Text(
-                            text = "✓",
-                            color = AppBackground,
-                            textAlign = TextAlign.Center,
-                            modifier = Modifier.align(Alignment.BottomEnd).size(18.dp)
-                                .clip(CircleShape).background(MarkerYellow)
-                        )
-                    }
-                }
-            }
-            Text(text = "→", style = AppTextStyles.scrollNumber, color = MainPurple)
+            SeenAvatars(viewedPlayers, Modifier.weight(1f))
+            Icon(
+                painter = painterResource(LucideR.drawable.lucide_ic_arrow_right),
+                contentDescription = null,
+                tint = MainPurple,
+                modifier = Modifier.size(30.dp)
+            )
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 PlayerAvatar(
                     avatarRes = currentPlayer.avatarRes,
                     photo = currentPlayer.photo,
                     decoration = PlayerAvatarDecoration(MarkerYellow, 2.dp),
-                    modifier = Modifier.size(64.dp)
+                    modifier = Modifier.size(if (compact) 56.dp else 64.dp)
                 )
                 Text(text = currentPlayer.name, style = AppTextStyles.labelsScroll, color = AppWhite)
+            }
+        }
+    }
+}
+
+@Composable
+private fun SeenAvatars(players: List<TurnPlayerUi>, modifier: Modifier = Modifier) {
+    Box(
+        modifier = modifier.height(60.dp),
+        contentAlignment = Alignment.CenterStart
+    ) {
+        players.take(MAX_VISIBLE_VIEWED_PLAYERS).forEachIndexed { index, player ->
+            Box(
+                modifier = Modifier.size(60.dp)
+                    .offset(x = (AVATAR_OVERLAP_STEP * index).dp)
+                    .zIndex(index.toFloat())
+            ) {
+                PlayerAvatar(
+                    avatarRes = player.avatarRes,
+                    photo = player.photo,
+                    decoration = PlayerAvatarDecoration(AppWhite, 2.dp),
+                    modifier = Modifier.size(54.dp)
+                )
+                Box(
+                    modifier = Modifier.align(Alignment.BottomEnd).size(20.dp)
+                        .clip(CircleShape).background(MarkerYellow),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        painter = painterResource(LucideR.drawable.lucide_ic_check),
+                        contentDescription = null,
+                        tint = AppBackground,
+                        modifier = Modifier.size(14.dp)
+                    )
+                }
             }
         }
     }
@@ -267,13 +295,12 @@ private fun SetupScreen(
     continueEnabled: Boolean = true,
     content: @Composable ColumnScope.() -> Unit
 ) {
-    Column(modifier = modifier.fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally) {
-        BackButton(
-            contentDescription = stringResource(R.string.back),
-            onClick = onBack,
-            modifier = Modifier.align(Alignment.Start).padding(start = Spacing.small, top = Spacing.small)
-        )
-        Spacer(Modifier.height(Spacing.large))
+    Column(
+        modifier = modifier.fillMaxSize().background(AppBackground),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        AppHeader(onBack = onBack, modifier = Modifier.padding(horizontal = Spacing.medium))
+        Spacer(Modifier.height(Spacing.small))
         Text(
             text = stringResource(R.string.how_many),
             style = AppTextStyles.title,
@@ -298,6 +325,8 @@ private const val MIN_PLAYERS = 3
 private const val MAX_PLAYERS = 10
 private const val MAX_ADVERSARIES = 4
 private const val MAX_VISIBLE_VIEWED_PLAYERS = 3
+private const val AVATAR_OVERLAP_STEP = 34
+private val COMPACT_HEIGHT = 720.dp
 
 @Preview(showBackground = true)
 @Suppress("UnusedPrivateMember")

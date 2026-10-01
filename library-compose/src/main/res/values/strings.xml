@@ -2,7 +2,8 @@
     <string name="app_name">Impostor</string>
     <string name="impostor_logo_description">Impostor</string>
     <string name="welcome_to">Welcome to</string>
-    <string name="gather_friends">Gather Your Friends</string>
+    <string name="onboarding_desc_1">“No baby I don’t want to go out with my friends” guy meets is favourite game.</string>
+    <string name="onboarding_desc_2">Did you ever have an exam question where your friend answered 42, you answered Cristiano Ronaldo and one did not even saw the question? Yeah it is basically that</string>
     <string name="choose_game">Choose The Game That\nSuits You The Most</string>
     <string name="have_fun">Have Fun And Break Trust\nBonds</string>
     <string name="next">Next</string>
@@ -12,6 +13,7 @@
     <string name="questions">Questions</string>
     <string name="continue_label">Continue</string>
     <string name="back">Back</string>
+    <string name="skip">Skip</string>
     <string name="how_many">How Many</string>
     <string name="players_question">Players?</string>
     <string name="impostors_question">Impostors?</string>

@@ -1,6 +1,7 @@
 package com.ncorti.kotlin.template.app.ui.screens
 
 import androidx.annotation.DrawableRes
+import androidx.annotation.StringRes
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -25,13 +26,15 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.ncorti.kotlin.template.app.ui.components.AppButton
 import com.ncorti.kotlin.template.app.ui.components.AppButtonStyle
 import com.ncorti.kotlin.template.app.ui.components.AppCard
-import com.ncorti.kotlin.template.app.ui.components.SkipButton
+import com.ncorti.kotlin.template.app.ui.components.AppHeader
 import com.ncorti.kotlin.template.app.ui.theme.AppBlack
 import com.ncorti.kotlin.template.app.ui.theme.AppWhite
 import com.ncorti.kotlin.template.app.ui.theme.LightPurple
@@ -42,8 +45,11 @@ import kotlinx.coroutines.delay
 
 private data class OnboardingPage(
     @param:DrawableRes val background: Int,
-    val title: String,
-    val showsCard: Boolean
+    @param:DrawableRes val titleRes: Int? = null,
+    @param:StringRes val descriptionRes: Int? = null,
+    @param:DrawableRes val illustrationRes: Int? = null,
+    val hasCard: Boolean = true,
+    val isWelcome: Boolean = false
 )
 
 @Composable
@@ -55,12 +61,14 @@ fun OnboardingScreen(
 ) {
     val pages = onboardingPages()
     val page = pages[pageIndex.coerceIn(pages.indices)]
-    if (!page.showsCard) {
+
+    if (page.isWelcome) {
         LaunchedEffect(pageIndex) {
             delay(WELCOME_DURATION_MILLIS)
             onNext()
         }
     }
+
     Box(modifier = modifier.fillMaxSize()) {
         Image(
             painter = painterResource(page.background),
@@ -69,10 +77,11 @@ fun OnboardingScreen(
             modifier = Modifier.fillMaxSize()
         )
         Box(Modifier.fillMaxSize().background(AppBlack.copy(alpha = BACKGROUND_OVERLAY_ALPHA)))
-        if (page.showsCard) {
-            OnboardingContent(pageIndex, page, pages.lastIndex, onNext, onSkip)
-        } else {
+
+        if (page.isWelcome) {
             WelcomeContent()
+        } else {
+            OnboardingContent(pageIndex, page, pages.lastIndex, onNext, onSkip)
         }
     }
 }
@@ -84,7 +93,6 @@ private fun WelcomeContent() {
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        //Text(text = stringResource(R.string.welcome_to), style = MaterialTheme.typography.h5)
         Spacer(Modifier.height(Spacing.medium))
         Image(
             painter = painterResource(R.drawable.welcoming_logo),
@@ -103,34 +111,21 @@ private fun OnboardingContent(
     onSkip: () -> Unit
 ) {
     Column(modifier = Modifier.fillMaxSize().safeDrawingPadding()) {
-        Box(Modifier.fillMaxWidth()) {
-            SkipButton(onClick = onSkip, modifier = Modifier.align(Alignment.CenterEnd))
-        }
+        AppHeader(onSkip = onSkip, modifier = Modifier.padding(horizontal = Spacing.medium))
+
         Spacer(Modifier.weight(1f))
-        AppCard(
-            modifier = Modifier.fillMaxWidth(),
-            backgroundColor = MaterialTheme.colors.primary
-        ) {
-            Column(
+
+        if (page.hasCard) {
+            AppCard(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalAlignment = Alignment.CenterHorizontally
+                backgroundColor = MaterialTheme.colors.primary
             ) {
-                Image(
-                    painter = painterResource(R.drawable.mask_minimal),
-                    contentDescription = null,
-                    modifier = Modifier.size(64.dp)
-                )
-                Spacer(Modifier.height(Spacing.medium))
-                Text(
-                    text = page.title,
-                    style = MaterialTheme.typography.h5,
-                    color = AppWhite,
-                    textAlign = TextAlign.Center
-                )
-                Spacer(Modifier.height(Spacing.large))
-                PageIndicator(selectedIndex = pageIndex - 1)
+                PageCenterContent(pageIndex = pageIndex, page = page)
             }
+        } else {
+            PageCenterContent(pageIndex = pageIndex, page = page)
         }
+
         Spacer(Modifier.weight(1f))
         AppButton(
             text = if (pageIndex == lastIndex) stringResource(R.string.get_started) else stringResource(R.string.next),
@@ -140,6 +135,52 @@ private fun OnboardingContent(
             showShadow = true
         )
         Spacer(Modifier.height(Spacing.extraLarge))
+    }
+}
+
+@Composable
+private fun PageCenterContent(
+    pageIndex: Int,
+    page: OnboardingPage
+) {
+    Column(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        page.illustrationRes?.let { illustration ->
+            Image(
+                painter = painterResource(illustration),
+                contentDescription = null,
+                modifier = Modifier.size(if (page.hasCard) 64.dp else 120.dp)
+            )
+            Spacer(Modifier.height(Spacing.medium))
+        }
+
+        page.titleRes?.let { titleXmlRes ->
+            Image(
+                painter = painterResource(titleXmlRes),
+                contentDescription = null,
+                modifier = Modifier.fillMaxWidth().padding(horizontal = Spacing.medium)
+            )
+            Spacer(Modifier.height(Spacing.medium))
+        }
+
+        page.descriptionRes?.let { descRes ->
+            Text(
+                text = stringResource(descRes),
+                style = MaterialTheme.typography.caption,
+                fontWeight = FontWeight.Light,
+                fontFamily = FontFamily.SansSerif,
+                color = AppWhite,
+                textAlign = TextAlign.Center,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = Spacing.large)
+            )
+            Spacer(Modifier.height(Spacing.large))
+        }
+
+        PageIndicator(selectedIndex = pageIndex - 1)
     }
 }
 
@@ -159,17 +200,38 @@ private fun PageIndicator(selectedIndex: Int) {
 
 @Composable
 private fun onboardingPages() = listOf(
-    OnboardingPage(R.drawable.onboarding_welcome, stringResource(R.string.welcome_to), false),
-    OnboardingPage(R.drawable.onboarding_gather, stringResource(R.string.gather_friends), true),
-    OnboardingPage(R.drawable.onboarding_choose, stringResource(R.string.choose_game), true),
-    OnboardingPage(R.drawable.onboarding_fun, stringResource(R.string.have_fun), true)
+    OnboardingPage(
+        background = R.drawable.welcome_picture,
+        isWelcome = true
+    ),
+    OnboardingPage(
+        background = R.drawable.onboarding_gather,
+        titleRes = R.drawable.title_1,
+        descriptionRes = R.string.onboarding_desc_1,
+        illustrationRes = R.drawable.impostor,
+        hasCard = false
+    ),
+    OnboardingPage(
+        background = R.drawable.onboarding_gather,
+        titleRes = R.drawable.title_2,
+        descriptionRes = R.string.onboarding_desc_2,
+        illustrationRes = R.drawable.mr_white,
+        hasCard = false
+    ),
+    OnboardingPage(
+        background = R.drawable.onboarding_gather,
+        titleRes = R.drawable.title_3,
+        // descriptionRes = R.string.onboarding_desc_3,
+        illustrationRes = R.drawable.win,
+        hasCard = false
+    )
 )
 
 @Preview(showBackground = true)
 @Suppress("UnusedPrivateMember")
 @Composable
 internal fun OnboardingPreview() = TemplateTheme {
-    OnboardingScreen(pageIndex = 1, onNext = {}, onSkip = {})
+    OnboardingScreen(pageIndex = 0, onNext = {}, onSkip = {})
 }
 
 private const val BACKGROUND_OVERLAY_ALPHA = 0.5f

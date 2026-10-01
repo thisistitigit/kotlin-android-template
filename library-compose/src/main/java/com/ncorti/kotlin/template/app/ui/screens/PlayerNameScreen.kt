@@ -8,6 +8,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -18,7 +19,7 @@ import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
@@ -45,16 +46,18 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.ncorti.kotlin.template.app.ui.components.AppButton
 import com.ncorti.kotlin.template.app.ui.components.AppButtonStyle
-import com.ncorti.kotlin.template.app.ui.components.BackButton
+import com.ncorti.kotlin.template.app.ui.components.AppHeader
 import com.ncorti.kotlin.template.app.ui.components.PlayerAvatar
 import com.ncorti.kotlin.template.app.ui.components.TitleBanner
 import com.ncorti.kotlin.template.app.ui.theme.AppTextStyles
+import com.ncorti.kotlin.template.app.ui.theme.AppBackground
 import com.ncorti.kotlin.template.app.ui.theme.AppWhite
 import com.ncorti.kotlin.template.app.ui.theme.MainPurple
 import com.ncorti.kotlin.template.app.ui.theme.MarkerYellow
 import com.ncorti.kotlin.template.app.ui.theme.Spacing
 import com.ncorti.kotlin.template.app.ui.theme.TemplateTheme
 import com.ncorti.kotlin.template.library.compose.R
+import com.composables.icons.lucide.R as LucideR
 
 data class PlayerNameUiState(
     val playerIndex: Int,
@@ -97,56 +100,57 @@ fun PlayerNameScreen(
     modifier: Modifier = Modifier
 ) {
     val focusManager = LocalFocusManager.current
-    Column(
-        modifier = modifier.fillMaxSize().imePadding(),
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        BackButton(
-            contentDescription = stringResource(R.string.back),
-            onClick = callbacks.onBack,
-            modifier = Modifier.align(Alignment.Start).padding(start = Spacing.small, top = Spacing.small)
-        )
-        Spacer(Modifier.height(32.dp))
-        Row(horizontalArrangement = Arrangement.Center) {
-            Text(text = stringResource(R.string.player_label), style = AppTextStyles.title, color = AppWhite)
-            Text(text = " ${state.playerIndex + 1}", style = AppTextStyles.title, color = MainPurple)
-        }
-        Spacer(Modifier.height(54.dp))
-        Box(
-            modifier = Modifier.fillMaxWidth().height(194.dp),
-            contentAlignment = Alignment.Center
+    BoxWithConstraints(modifier = modifier.fillMaxSize().background(AppBackground).imePadding()) {
+        val compact = maxHeight < COMPACT_PLAYER_NAME_HEIGHT
+        val bannerHeight = if (compact) 136.dp else 194.dp
+        val avatarSize = if (compact) 96.dp else 126.dp
+        Column(
+            modifier = Modifier.fillMaxSize(),
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            TitleBanner(text = "", height = 194.dp, modifier = Modifier.fillMaxWidth())
-            PlayerAvatar(
-                avatarRes = state.avatarRes,
-                photo = state.photo,
-                modifier = Modifier.size(126.dp)
-            ) {
-                CameraButton(
-                    onClick = onTakePhoto,
-                    modifier = Modifier.align(Alignment.BottomEnd).offset(x = 8.dp, y = 8.dp)
-                )
+            AppHeader(onBack = callbacks.onBack, modifier = Modifier.padding(horizontal = Spacing.medium))
+            Spacer(Modifier.height(if (compact) 4.dp else Spacing.medium))
+            Row(horizontalArrangement = Arrangement.Center) {
+                Text(text = stringResource(R.string.player_label), style = AppTextStyles.title, color = AppWhite)
+                Text(text = " ${state.playerIndex + 1}", style = AppTextStyles.title, color = MainPurple)
             }
+            Spacer(Modifier.height(if (compact) Spacing.small else Spacing.extraLarge))
+            Box(
+                modifier = Modifier.fillMaxWidth().height(bannerHeight),
+                contentAlignment = Alignment.Center
+            ) {
+                TitleBanner(text = "", height = bannerHeight, modifier = Modifier.fillMaxWidth())
+                PlayerAvatar(
+                    avatarRes = state.avatarRes,
+                    photo = state.photo,
+                    modifier = Modifier.size(avatarSize)
+                ) {
+                    CameraButton(
+                        onClick = onTakePhoto,
+                        modifier = Modifier.align(Alignment.BottomEnd).offset(x = 8.dp, y = 8.dp)
+                    )
+                }
+            }
+            Spacer(Modifier.height(if (compact) Spacing.small else 12.dp))
+            NicknameField(
+                value = state.nickname,
+                onValueChange = callbacks.onNicknameChange,
+                onDone = {
+                    focusManager.moveFocus(FocusDirection.Down)
+                    if (state.nickname.isNotBlank()) callbacks.onContinue()
+                },
+                modifier = Modifier.fillMaxWidth().widthIn(max = 295.dp)
+            )
+            Spacer(Modifier.weight(1f))
+            AppButton(
+                text = stringResource(R.string.next),
+                onClick = callbacks.onContinue,
+                enabled = state.nickname.isNotBlank(),
+                style = AppButtonStyle.SECONDARY,
+                modifier = Modifier.fillMaxWidth().widthIn(max = 172.dp)
+            )
+            Spacer(Modifier.height(if (compact) Spacing.medium else Spacing.extraLarge))
         }
-        Spacer(Modifier.height(20.dp))
-        NicknameField(
-            value = state.nickname,
-            onValueChange = callbacks.onNicknameChange,
-            onDone = {
-                focusManager.moveFocus(FocusDirection.Down)
-                if (state.nickname.isNotBlank()) callbacks.onContinue()
-            },
-            modifier = Modifier.width(295.dp)
-        )
-        Spacer(Modifier.weight(1f))
-        AppButton(
-            text = stringResource(R.string.next),
-            onClick = callbacks.onContinue,
-            enabled = state.nickname.isNotBlank(),
-            style = AppButtonStyle.SECONDARY,
-            modifier = Modifier.width(172.dp)
-        )
-        Spacer(Modifier.height(Spacing.extraLarge))
     }
 }
 
@@ -200,14 +204,16 @@ private fun CameraButton(onClick: () -> Unit, modifier: Modifier = Modifier) {
         contentAlignment = Alignment.Center
     ) {
         Icon(
-            painter = painterResource(R.drawable.ic_camera),
+            painter = painterResource(LucideR.drawable.lucide_ic_camera),
             contentDescription = null,
+            tint = AppBackground,
             modifier = Modifier.size(22.dp)
         )
     }
 }
 
 private const val MAX_NICKNAME_LENGTH = 18
+private val COMPACT_PLAYER_NAME_HEIGHT = 700.dp
 
 @Preview(showBackground = true, backgroundColor = 0xFF222222)
 @Composable
