@@ -6,7 +6,8 @@ data class RoundResult(
     val roundId: Int,
     val eliminatedPlayerIds: Set<Int>,
     val impostorIds: Set<Int>,
-    val mrWhiteId: Int?,
+    val mrWhiteIds: Set<Int>,
+    val mrWhiteWinnerId: Int?,
     val winningRoles: Set<RoleType>,
     val scores: Map<Int, Int>
 )

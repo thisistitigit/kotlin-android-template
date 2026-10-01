@@ -22,6 +22,7 @@ import androidx.compose.ui.unit.dp
 import com.ncorti.kotlin.template.app.ui.theme.AppBackground
 import com.ncorti.kotlin.template.app.ui.theme.AppWhite
 import com.ncorti.kotlin.template.app.ui.theme.FrostedWhite
+import com.ncorti.kotlin.template.app.ui.theme.MarkerYellow
 import com.ncorti.kotlin.template.app.ui.theme.Spacing
 
 @Suppress("LongParameterList")
@@ -37,13 +38,15 @@ fun AppButton(
     val shape = RoundedCornerShape(percent = 50)
     val background = when (style) {
         AppButtonStyle.PRIMARY -> MaterialTheme.colors.primary
+        AppButtonStyle.SECONDARY -> MarkerYellow
         AppButtonStyle.FROSTED -> FrostedWhite
         AppButtonStyle.OUTLINED -> AppBackground
     }
     val border = when (style) {
-        AppButtonStyle.PRIMARY -> Color.Transparent
+        AppButtonStyle.PRIMARY, AppButtonStyle.SECONDARY -> Color.Transparent
         AppButtonStyle.FROSTED, AppButtonStyle.OUTLINED -> AppWhite.copy(alpha = 0.75f)
     }
+    val contentColor = if (style == AppButtonStyle.SECONDARY) AppBackground else AppWhite
     Box(
         modifier = modifier
             .then(if (showShadow) Modifier.shadow(8.dp, shape) else Modifier)
@@ -55,6 +58,6 @@ fun AppButton(
             .padding(horizontal = Spacing.large, vertical = Spacing.medium),
         contentAlignment = Alignment.Center
     ) {
-        Text(text = text, style = MaterialTheme.typography.button, color = AppWhite)
+        Text(text = text, style = MaterialTheme.typography.button, color = contentColor)
     }
 }

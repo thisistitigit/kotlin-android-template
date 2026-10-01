@@ -26,7 +26,7 @@ class StartConfiguredRoundUseCase(
             roundId = roundId,
             players = game.players.map { it.gamePlayer },
             impostorCount = game.game.impostorCount,
-            includeMrWhite = game.game.includeMrWhite,
+            mrWhiteCount = game.game.mrWhiteCount,
             civilianRole = requireNotNull(repository.getRole(RoleType.CIVILIAN)),
             impostorRole = requireNotNull(repository.getRole(RoleType.IMPOSTOR)),
             mrWhiteRole = repository.getRole(RoleType.MR_WHITE),

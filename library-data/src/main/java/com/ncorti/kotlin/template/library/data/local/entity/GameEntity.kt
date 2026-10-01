@@ -16,8 +16,8 @@ data class GameEntity(
     val playerCount: Int,
     @ColumnInfo(name = "impostor_count")
     val impostorCount: Int,
-    @ColumnInfo(name = "include_mr_white")
-    val includeMrWhite: Boolean = false,
+    @ColumnInfo(name = "mr_white_count")
+    val mrWhiteCount: Int = 0,
     @ColumnInfo(name = "created_at")
     val createdAt: Long = System.currentTimeMillis(),
     @ColumnInfo(name = "finished_at")

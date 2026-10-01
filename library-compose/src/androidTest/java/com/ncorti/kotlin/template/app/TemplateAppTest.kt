@@ -22,7 +22,11 @@ class TemplateAppTest {
 
         composeTestRule.onNodeWithText("New Game").assertIsDisplayed()
         composeTestRule.onNodeWithText("Classic").performClick()
-        composeTestRule.onNodeWithText("Continue").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Continue").performClick()
+        composeTestRule.onNodeWithText("Players?").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Continue").performClick()
+        composeTestRule.onNodeWithText("Impostors?").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Mr. White").assertIsDisplayed()
     }
 
     private companion object {

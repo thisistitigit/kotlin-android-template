@@ -8,7 +8,7 @@ data class RoundSetup(
     val roundId: Int,
     val players: List<GamePlayerEntity>,
     val impostorCount: Int,
-    val includeMrWhite: Boolean,
+    val mrWhiteCount: Int,
     val civilianRole: RoleEntity,
     val impostorRole: RoleEntity,
     val mrWhiteRole: RoleEntity?,

@@ -47,13 +47,13 @@ class GameRepository(private val database: AppDatabase) {
     suspend fun createGame(
         playerIds: List<Int>,
         impostorCount: Int,
-        includeMrWhite: Boolean
+        mrWhiteCount: Int
     ): Long = database.withTransaction {
         val gameId = gameDao.insertGame(
             GameEntity(
                 playerCount = playerIds.size,
                 impostorCount = impostorCount,
-                includeMrWhite = includeMrWhite
+                mrWhiteCount = mrWhiteCount
             )
         ).toInt()
         gameDao.insertGamePlayers(

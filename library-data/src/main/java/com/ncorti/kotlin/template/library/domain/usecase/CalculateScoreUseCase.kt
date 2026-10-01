@@ -12,40 +12,42 @@ class CalculateScoreUseCase {
         roundId: Int,
         playerIds: Set<Int>,
         impostorIds: Set<Int>,
-        mrWhiteId: Int?,
+        mrWhiteIds: Set<Int>,
         votes: Map<Int, Int>,
-        mrWhiteGuessedSecret: Boolean = false
+        mrWhiteGuesserId: Int? = null
     ): ScoreCalculation {
-        validate(playerIds, impostorIds, mrWhiteId, votes)
+        val roles = RoundRoles(playerIds, impostorIds, mrWhiteIds)
+        validate(roles, votes, mrWhiteGuesserId)
         val eliminated = mostVoted(votes)
-        val mrWhiteWins = mrWhiteId in eliminated && mrWhiteGuessedSecret
-        val adversaryDiscovered = eliminated.any { it in impostorIds || it == mrWhiteId }
+        val mrWhiteWinnerId = mrWhiteGuesserId?.takeIf { it in eliminated }
+        val adversaryDiscovered = eliminated.any { it in impostorIds || it in mrWhiteIds }
         val winners = when {
-            mrWhiteWins -> setOf(RoleType.MR_WHITE)
+            mrWhiteWinnerId != null -> setOf(RoleType.MR_WHITE)
             adversaryDiscovered -> setOf(RoleType.CIVILIAN)
             else -> buildSet {
                 add(RoleType.IMPOSTOR)
-                if (mrWhiteId != null) add(RoleType.MR_WHITE)
+                if (mrWhiteIds.isNotEmpty()) add(RoleType.MR_WHITE)
             }
         }
-        val events = voteEvents(roundId, votes, impostorIds, mrWhiteId).toMutableList()
-        events += winnerEvents(roundId, playerIds, impostorIds, mrWhiteId, winners)
+        val events = voteEvents(roundId, votes, roles).toMutableList()
+        events += winnerEvents(roundId, roles, mrWhiteWinnerId, winners)
         val scores = events.groupBy { it.gamePlayerId }.mapValues { (_, values) -> values.sumOf { it.points } }
         return ScoreCalculation(
-            result = RoundResult(roundId, eliminated, impostorIds, mrWhiteId, winners, scores),
+            result = RoundResult(roundId, eliminated, impostorIds, mrWhiteIds, mrWhiteWinnerId, winners, scores),
             events = events
         )
     }
 
     private fun validate(
-        playerIds: Set<Int>,
-        impostorIds: Set<Int>,
-        mrWhiteId: Int?,
-        votes: Map<Int, Int>
+        roles: RoundRoles,
+        votes: Map<Int, Int>,
+        mrWhiteGuesserId: Int?
     ) {
-        require(impostorIds.isNotEmpty() && impostorIds.all { it in playerIds })
-        require(mrWhiteId == null || mrWhiteId in playerIds && mrWhiteId !in impostorIds)
-        require(votes.keys.all { it in playerIds } && votes.values.all { it in playerIds })
+        require(roles.impostorIds.isNotEmpty() && roles.impostorIds.all { it in roles.playerIds })
+        require(roles.mrWhiteIds.all { it in roles.playerIds })
+        require(roles.mrWhiteIds.intersect(roles.impostorIds).isEmpty())
+        require(mrWhiteGuesserId == null || mrWhiteGuesserId in roles.mrWhiteIds)
+        require(votes.keys.all { it in roles.playerIds } && votes.values.all { it in roles.playerIds })
         require(votes.none { (voter, target) -> voter == target })
     }
 
@@ -58,32 +60,40 @@ class CalculateScoreUseCase {
     private fun voteEvents(
         roundId: Int,
         votes: Map<Int, Int>,
-        impostorIds: Set<Int>,
-        mrWhiteId: Int?
+        roles: RoundRoles
     ): List<ScoreEventEntity> = votes.mapNotNull { (voter, target) ->
         when {
-            target in impostorIds -> scoreEvent(roundId, voter, ScoreReason.CORRECT_IMPOSTOR_VOTE, CORRECT_VOTE_POINTS)
-            target == mrWhiteId -> scoreEvent(roundId, voter, ScoreReason.CORRECT_MR_WHITE_VOTE, CORRECT_VOTE_POINTS)
+            target in roles.impostorIds -> scoreEvent(
+                roundId,
+                voter,
+                ScoreReason.CORRECT_IMPOSTOR_VOTE,
+                CORRECT_VOTE_POINTS
+            )
+            target in roles.mrWhiteIds -> scoreEvent(
+                roundId,
+                voter,
+                ScoreReason.CORRECT_MR_WHITE_VOTE,
+                CORRECT_VOTE_POINTS
+            )
             else -> null
         }
     }
 
     private fun winnerEvents(
         roundId: Int,
-        playerIds: Set<Int>,
-        impostorIds: Set<Int>,
-        mrWhiteId: Int?,
+        roles: RoundRoles,
+        mrWhiteWinnerId: Int?,
         winners: Set<RoleType>
     ): List<ScoreEventEntity> {
         val winningPlayers = when {
-            RoleType.MR_WHITE in winners && winners.size == 1 -> setOfNotNull(mrWhiteId)
-            RoleType.CIVILIAN in winners -> playerIds - impostorIds - setOfNotNull(mrWhiteId)
-            else -> impostorIds + setOfNotNull(mrWhiteId)
+            mrWhiteWinnerId != null -> setOf(mrWhiteWinnerId)
+            RoleType.CIVILIAN in winners -> roles.playerIds - roles.impostorIds - roles.mrWhiteIds
+            else -> roles.impostorIds + roles.mrWhiteIds
         }
         return winningPlayers.map { playerId ->
             val reason = when {
-                playerId == mrWhiteId -> ScoreReason.MR_WHITE_WIN
-                playerId in impostorIds -> ScoreReason.IMPOSTOR_WIN
+                playerId in roles.mrWhiteIds -> ScoreReason.MR_WHITE_WIN
+                playerId in roles.impostorIds -> ScoreReason.IMPOSTOR_WIN
                 else -> ScoreReason.CIVILIAN_WIN
             }
             val points = if (reason == ScoreReason.MR_WHITE_WIN && winners.size == 1) {
@@ -103,4 +113,10 @@ class CalculateScoreUseCase {
         const val WIN_POINTS = 3
         const val MR_WHITE_GUESS_POINTS = 7
     }
+
+    private data class RoundRoles(
+        val playerIds: Set<Int>,
+        val impostorIds: Set<Int>,
+        val mrWhiteIds: Set<Int>
+    )
 }

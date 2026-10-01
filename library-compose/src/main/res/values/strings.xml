@@ -11,4 +11,25 @@
     <string name="classic">Classic</string>
     <string name="questions">Questions</string>
     <string name="continue_label">Continue</string>
+    <string name="back">Back</string>
+    <string name="how_many">How Many</string>
+    <string name="players_question">Players?</string>
+    <string name="impostors_question">Impostors?</string>
+    <string name="player_label">PLAYER</string>
+    <string name="nickname">Nickname</string>
+    <string name="take_photo">Take photo</string>
+    <string name="turn_suffix">\'S TURN</string>
+    <string name="pass_phone_to">Pass the phone to %1$s</string>
+    <string name="see_word">See Word</string>
+    <string name="see_question">See Question</string>
+    <string name="mr_white">Mr. White</string>
+    <string name="impostor">Impostor</string>
+    <plurals name="mr_white_count">
+        <item quantity="one">Mr. White</item>
+        <item quantity="other">Mr. Whites</item>
+    </plurals>
+    <plurals name="impostor_count">
+        <item quantity="one">Impostor</item>
+        <item quantity="other">Impostors</item>
+    </plurals>
 </resources>

@@ -168,7 +168,7 @@ private fun onboardingPages() = listOf(
 @Preview(showBackground = true)
 @Suppress("UnusedPrivateMember")
 @Composable
-private fun OnboardingPreview() = TemplateTheme {
+internal fun OnboardingPreview() = TemplateTheme {
     OnboardingScreen(pageIndex = 1, onNext = {}, onSkip = {})
 }
 

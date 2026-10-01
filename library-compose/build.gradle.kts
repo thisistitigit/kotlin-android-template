@@ -1,4 +1,5 @@
 import org.gradle.kotlin.dsl.withType
+import org.gradle.api.tasks.testing.Test
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
@@ -6,8 +7,11 @@ plugins {
     id("com.android.library")
     kotlin("android")
     alias(libs.plugins.compose.compiler)
-
+    alias(libs.plugins.paparazzi)
 }
+
+// Keeps generated artifacts outside the source module, avoiding editor file locks on classes.jar.
+layout.buildDirectory.set(rootProject.layout.buildDirectory.dir(project.name))
 
 android {
     compileSdk = libs.versions.compile.sdk.version.get().toInt()
@@ -45,6 +49,13 @@ tasks.withType<KotlinCompile>().configureEach {
     compilerOptions {
         jvmTarget.set(JvmTarget.JVM_17)
     }
+}
+
+tasks.withType<Test>().configureEach {
+    inputs.property(
+        "composePreviewFilter",
+        providers.environmentVariable("COMPOSE_PREVIEW_FILTER").orElse("")
+    )
 }
 
 dependencies {

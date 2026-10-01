@@ -33,4 +33,4 @@ fun SplashScreen(modifier: Modifier = Modifier) {
 @Preview(showBackground = true)
 @Suppress("UnusedPrivateMember")
 @Composable
-private fun SplashPreview() = TemplateTheme { SplashScreen() }
+internal fun SplashPreview() = TemplateTheme { SplashScreen() }

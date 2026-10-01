@@ -1,16 +1,23 @@
 # Impostor
 
-Aplicação Android local para jogos sociais, escrita em Kotlin, Room e Jetpack Compose. O fluxo visual implementado é `Splash → Onboarding → New Game`; o backend guarda jogadores, sessões, rondas, papéis, conteúdo, votos e pontuação.
+Aplicação Android local para jogos sociais, escrita em Kotlin, Room e Jetpack Compose. O fluxo visual implementado é `Splash → Onboarding → New Game → Players → Player names → Impostors → Player turn`; o backend guarda jogadores, sessões, rondas, papéis, conteúdo, votos e pontuação.
 
 ## Executar e validar
 
-Usa JDK 17 e Android SDK 36. O projeto usa Room 2.8.5 com KSP 2.3.12 para compatibilidade com Kotlin 2.3. Em PowerShell:
+Usa o JBR 21 incluído no Android Studio para executar o Gradle e Android SDK 36. O bytecode da app continua configurado para Java 17. O projeto usa Kotlin 2.1, Room 2.7.2, KSP 2.1.0-1.0.29 e Paparazzi 2.0.0-alpha05; esta combinação mantém o compilador, Room, AGP e os previews alinhados. Em PowerShell:
 
 ```powershell
-$env:JAVA_HOME = 'C:/Program Files/Java/jdk-17'
+$env:JAVA_HOME = 'C:/Program Files/Android/Android Studio/jbr'
 .\gradlew.bat :app:assembleDebug
 .\gradlew.bat :library-data:testDebugUnitTest
 .\gradlew.bat detekt :app:lintDebug :library-compose:lintDebug :library-data:lintDebug
+```
+
+Para validar os previews sem emulador:
+
+```powershell
+$env:COMPOSE_PREVIEW_FILTER = 'PlayerNamePreview,PlayerTurnPreview'
+.\gradlew.bat :library-compose:testDebugUnitTest --tests '*ComposePreviewer'
 ```
 
 Os testes instrumentados precisam de emulador ou dispositivo:
@@ -29,11 +36,11 @@ O Mr. White é opcional ao criar o jogo:
 val gameId = backend.createGame(
     playerIds = playerIds,
     impostorCount = 1,
-    includeMrWhite = true
+    mrWhiteCount = 2
 )
 ```
 
-Em cada ronda, o Mr. White é escolhido entre jogadores que não são impostores e recebe sempre `contentId = null`, que representa a palavra vazia. Se for eliminado e adivinhar a palavra, passa `mrWhiteGuessedSecret = true` ao fechar a ronda e recebe a vitória própria. A classificação é calculada a partir de `score_events`, a única fonte de verdade para pontos.
+Em cada ronda, cada Mr. White é escolhido entre jogadores que não são impostores e recebe sempre `contentId = null`, que representa a palavra vazia. O valor zero desativa este papel. Se um Mr. White eliminado adivinhar a palavra, passa o respetivo `gamePlayerId` como `mrWhiteGuesserId` ao fechar a ronda e recebe a vitória própria. A classificação é calculada a partir de `score_events`, a única fonte de verdade para pontos.
 
 Inicializa o backend uma vez, idealmente num container de dependências da aplicação:
 
@@ -54,8 +61,8 @@ library-data/
   domain/model/     Modelos usados pelas regras
   domain/usecase/   Operações de negócio
 library-compose/
-  ui/components/    AppButton, AppCard, SkipButton e GameModeCircle
-  ui/screens/       SplashScreen, OnboardingScreen e HomeScreen
+  ui/components/    Botões, cards, seletores, banner e círculos de modo
+  ui/screens/       Splash, onboarding, home e configuração do jogo
   ui/theme/         Paleta, tipografia, formas e espaçamentos
 ```
 
@@ -67,10 +74,11 @@ As cores ficam apenas em `library-compose/src/main/java/com/ncorti/kotlin/templa
 
 | Token | Hex | Uso |
 | --- | --- | --- |
-| `MainPurple` | `#806FF5` | cards e ações principais |
-| `LightPurple` | `#C8C1FF` | texto secundário e indicadores |
+| `MainPurple` | `#897CFF` | cards e ações principais |
+| `LightPurple` | `#D0CBFF` | texto secundário e indicadores |
 | `AppBackground` | `#222222` | fundo geral |
-| `MarkerYellow` | `#E7FA55` | modo de jogo selecionado |
+| `MarkerYellow` | `#E2F163` | botões de progressão e marcadores |
+| `DeepPurple` | `#292238` | cards de privacidade e progresso |
 | `AppWhite` | `#FFFFFF` | texto/contornos |
 | `AppBlack` | `#000000` | overlay e contraste |
 
@@ -85,6 +93,9 @@ library-compose/src/main/res/drawable-nodpi/
   logo.png               Splash sem fundo
   welcoming_logo.png    Primeiro ecrã do onboarding
   text_logo.png          Cabeçalho do New Game
+  vibrent_1.png … vibrent_27.png  Avatares randomizados
+  cat_turn_01.png, cat_turn_02.png  Gatos randomizados do turno
+design-assets/avatars/              Originais dos 27 avatares
 ```
 
 O `logo.png` incluído foi extraído da referência com fundo transparente. `welcoming_logo.png` e `text_logo.png` são variantes de exemplo geradas para as proporções dos respetivos ecrãs; substitui-as pelos exports oficiais mantendo os nomes.
@@ -104,9 +115,13 @@ Outros assets:
 
 ```text
 design-assets/home/classic.svg       SVG-fonte do modo Classic
+design-assets/home/classic_not_selected.svg
 design-assets/home/questions.svg     SVG-fonte do modo Questions
+design-assets/home/questions_not_selected.svg
 library-compose/src/main/res/drawable/classic.xml
+library-compose/src/main/res/drawable/classic_not_selected.xml
 library-compose/src/main/res/drawable/questions.xml
+library-compose/src/main/res/drawable/questions_not_selected.xml
 library-compose/src/main/res/drawable/mask_minimal.xml
 ```
 
@@ -116,7 +131,7 @@ Não coloques imagens em `mipmap`, exceto ícones de launcher. Fotografias grand
 
 ## Componentes reutilizáveis
 
-`AppButton` é a base de todos os botões. `AppButtonStyle.PRIMARY`, `FROSTED` e `OUTLINED` mudam o tratamento visual; `showShadow` controla a sombra:
+`AppButton` é a base de todos os botões. `AppButtonStyle.PRIMARY`, `SECONDARY`, `FROSTED` e `OUTLINED` mudam o tratamento visual; `SECONDARY` aplica `MarkerYellow` e `showShadow` controla a sombra:
 
 ```kotlin
 AppButton(
@@ -127,7 +142,25 @@ AppButton(
 )
 ```
 
-`AppCard` recebe cor de fundo, contorno e qualquer conteúdo. O card roxo do onboarding é uma utilização deste componente. `GameModeCircle` generaliza os círculos do New Game e recebe `iconRes`, `label`, `selected` e `onClick`; `MarkerYellow` só aparece no item selecionado.
+`AppCard` recebe cor de fundo, contorno e qualquer conteúdo. O card roxo do onboarding é uma utilização deste componente. `GameModeCircle` recebe os SVGs convertidos de estado selecionado/não selecionado, `label`, `selected` e `onClick`; usa `LightPurple` no modo selecionado e mantém sempre o contorno branco.
+
+`NumberSelector` é o sistema horizontal reutilizado nos ecrãs de jogadores, impostores e Mr. Whites. Recebe um `IntRange`, o valor selecionado e um callback; o pager aplica snapping e mantém o item central como seleção. `RoleSelector` mostra apenas Impostor em Questions e permite alternar entre Mr. White e Impostor em Classic.
+
+`PlayerAvatar` apresenta um avatar de resource ou a fotografia capturada. Os 27 avatares são baralhados sem repetição ao configurar jogadores. `PlayerNameRoute` contém `TakePicturePreview`, enquanto `PlayerNameScreen` é uma UI pura; assim a câmara funciona no dispositivo e os previews não dependem de uma Activity. `PlayerTurnScreen` reutiliza `PlayerAvatar`, `AppCard` e `AppButton`, recebe a lista de jogadores que já viram o conteúdo e escolhe um gato do array `TURN_CAT_IMAGES`.
+
+O guia para implementar palavra, pergunta e Mr. White está em [docs/NEXT_GAME_SCREENS.md](docs/NEXT_GAME_SCREENS.md), junto das referências em `docs/mockups/`.
+
+## Tipografia Poppins
+
+As fontes locais e a licença OFL estão em:
+
+```text
+library-compose/src/main/res/font/poppins_bold.ttf
+library-compose/src/main/res/font/poppins_black.ttf
+design-assets/fonts/OFL-Poppins.txt
+```
+
+Os estilos centralizados em `ui/theme/Typography.kt` são `title` (Poppins Black 35sp), `labelsScroll` (Bold 20sp), `scrollNumber` (Bold 40sp) e `chosenNumber` (Bold 64sp). Usa estes tokens em vez de criar `TextStyle` diretamente nos ecrãs.
 
 Ao criar um componente novo:
 
@@ -139,7 +172,7 @@ Ao criar um componente novo:
 
 ## Decisões e próximos pontos de integração
 
-O botão `Continue` no New Game já valida visualmente a seleção do modo. O callback está pronto para abrir a configuração de jogadores, impostores e Mr. White quando esse ecrã for criado. O onboarding ainda é mostrado em cada arranque; guarda a conclusão em DataStore quando quiseres mostrá-lo apenas na primeira utilização.
+O botão `Continue` no New Game só fica ativo após escolher um modo. Players permite escolher entre 3 e 10 jogadores; o ecrã seguinte limita adversários para preservar pelo menos um civil. Classic permite quantidades independentes de Impostor e Mr. White, enquanto Questions fixa o seletor em Impostor e mantém `mrWhiteCount = 0`. O onboarding ainda é mostrado em cada arranque; guarda a conclusão em DataStore quando quiseres mostrá-lo apenas na primeira utilização.
 
 O schema Room é exportado para `library-data/schemas`. Como esta base ainda está na versão 1, as entidades foram normalizadas diretamente. Depois de publicares uma versão da app, qualquer alteração ao schema deve incrementar a versão e incluir uma migration testada.
 

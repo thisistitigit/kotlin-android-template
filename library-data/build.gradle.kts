@@ -7,6 +7,9 @@ plugins {
     alias(libs.plugins.ksp)
 }
 
+// Keeps generated artifacts outside the source module, avoiding editor file locks on classes.jar.
+layout.buildDirectory.set(rootProject.layout.buildDirectory.dir(project.name))
+
 android {
     compileSdk = libs.versions.compile.sdk.version.get().toInt()
 

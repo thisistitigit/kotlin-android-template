@@ -9,11 +9,14 @@ class AssignRolesUseCase(private val shuffle: (List<Int>) -> List<Int> = { it.sh
         validate(setup)
         val shuffledIds = shuffle(setup.players.map { it.id })
         val impostorIds = shuffledIds.take(setup.impostorCount).toSet()
-        val mrWhiteId = if (setup.includeMrWhite) shuffledIds[setup.impostorCount] else null
+        val mrWhiteIds = shuffledIds
+            .drop(setup.impostorCount)
+            .take(setup.mrWhiteCount)
+            .toSet()
 
         return setup.players.map { player ->
             val role = when (player.id) {
-                mrWhiteId -> requireNotNull(setup.mrWhiteRole)
+                in mrWhiteIds -> requireNotNull(setup.mrWhiteRole)
                 in impostorIds -> setup.impostorRole
                 else -> setup.civilianRole
             }
@@ -33,10 +36,11 @@ class AssignRolesUseCase(private val shuffle: (List<Int>) -> List<Int> = { it.sh
     private fun validate(setup: RoundSetup) {
         require(setup.players.map { it.id }.distinct().size == setup.players.size)
         require(setup.impostorCount > 0)
-        val adversaryCount = setup.impostorCount + if (setup.includeMrWhite) 1 else 0
+        require(setup.mrWhiteCount >= 0)
+        val adversaryCount = setup.impostorCount + setup.mrWhiteCount
         require(adversaryCount < setup.players.size)
         require(setup.civilianRole.type == RoleType.CIVILIAN)
         require(setup.impostorRole.type == RoleType.IMPOSTOR)
-        require(!setup.includeMrWhite || setup.mrWhiteRole?.type == RoleType.MR_WHITE)
+        require(setup.mrWhiteCount == 0 || setup.mrWhiteRole?.type == RoleType.MR_WHITE)
     }
 }

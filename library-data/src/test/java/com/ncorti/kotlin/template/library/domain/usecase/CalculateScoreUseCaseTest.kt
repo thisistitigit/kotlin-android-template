@@ -13,9 +13,9 @@ class CalculateScoreUseCaseTest {
             roundId = 1,
             playerIds = setOf(1, 2, 3, 4),
             impostorIds = setOf(1),
-            mrWhiteId = 2,
+            mrWhiteIds = setOf(2, 4),
             votes = mapOf(1 to 2, 3 to 2, 4 to 2),
-            mrWhiteGuessedSecret = true
+            mrWhiteGuesserId = 2
         ).result
 
         assertEquals(setOf(RoleType.MR_WHITE), result.winningRoles)
@@ -28,7 +28,7 @@ class CalculateScoreUseCaseTest {
             roundId = 42,
             playerIds = setOf(1, 2, 3),
             impostorIds = setOf(1),
-            mrWhiteId = null,
+            mrWhiteIds = emptySet(),
             votes = mapOf(1 to 2, 2 to 1, 3 to 1)
         ).result
 

@@ -10,8 +10,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.MaterialTheme
-import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -21,6 +19,8 @@ import androidx.compose.ui.tooling.preview.Preview
 import com.ncorti.kotlin.template.app.ui.components.AppButton
 import com.ncorti.kotlin.template.app.ui.components.AppButtonStyle
 import com.ncorti.kotlin.template.app.ui.components.GameModeCircle
+import com.ncorti.kotlin.template.app.ui.components.GameModeIcons
+import com.ncorti.kotlin.template.app.ui.components.TitleBanner
 import com.ncorti.kotlin.template.app.ui.theme.Spacing
 import com.ncorti.kotlin.template.app.ui.theme.TemplateTheme
 import com.ncorti.kotlin.template.library.compose.R
@@ -42,22 +42,21 @@ fun HomeScreen(
             contentDescription = stringResource(R.string.impostor_logo_description),
             modifier = Modifier.fillMaxWidth()
         )
-        Text(
+        TitleBanner(
             text = stringResource(R.string.new_game),
-            style = MaterialTheme.typography.h3,
-            modifier = Modifier.align(Alignment.Start).padding(top = Spacing.large)
+            modifier = Modifier.fillMaxWidth().padding(top = Spacing.medium)
         )
-        Spacer(Modifier.height(Spacing.extraLarge))
+        Spacer(Modifier.height(Spacing.medium))
         GameModeCircle(
             label = stringResource(R.string.classic),
-            iconRes = R.drawable.classic,
+            icons = GameModeIcons(R.drawable.classic, R.drawable.classic_not_selected),
             selected = selectedMode == GameModeType.CLASSIC,
             onClick = { onModeSelected(GameModeType.CLASSIC) }
         )
         Spacer(Modifier.height(Spacing.extraLarge))
         GameModeCircle(
             label = stringResource(R.string.questions),
-            iconRes = R.drawable.questions,
+            icons = GameModeIcons(R.drawable.questions, R.drawable.questions_not_selected),
             selected = selectedMode == GameModeType.QUESTION,
             onClick = { onModeSelected(GameModeType.QUESTION) }
         )
@@ -77,6 +76,6 @@ fun HomeScreen(
 @Preview(showBackground = true)
 @Suppress("UnusedPrivateMember")
 @Composable
-private fun HomePreview() = TemplateTheme {
+internal fun HomePreview() = TemplateTheme {
     HomeScreen(GameModeType.CLASSIC, {}, {})
 }

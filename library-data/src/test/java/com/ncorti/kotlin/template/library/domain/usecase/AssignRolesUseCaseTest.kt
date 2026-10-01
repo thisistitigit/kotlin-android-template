@@ -19,28 +19,28 @@ class AssignRolesUseCaseTest {
     @Test
     fun mrWhiteIsOptionalAndAlwaysReceivesBlankContent() {
         val useCase = AssignRolesUseCase { it }
-        val assignments = useCase(setup(includeMrWhite = true))
+        val assignments = useCase(setup(mrWhiteCount = 2))
 
         assertEquals(impostor.id, assignments.first { it.gamePlayerId == 1 }.roleId)
-        val mrWhiteAssignment = assignments.first { it.gamePlayerId == 2 }
-        assertEquals(mrWhite.id, mrWhiteAssignment.roleId)
-        assertNull(mrWhiteAssignment.contentId)
-        assertEquals(word.id, assignments.first { it.gamePlayerId == 3 }.contentId)
+        val mrWhiteAssignments = assignments.filter { it.roleId == mrWhite.id }
+        assertEquals(2, mrWhiteAssignments.size)
+        mrWhiteAssignments.forEach { assertNull(it.contentId) }
+        assertEquals(word.id, assignments.first { it.gamePlayerId == 4 }.contentId)
     }
 
     @Test
     fun disabledMrWhiteLeavesOnlyImpostorsAndCivilians() {
-        val assignments = AssignRolesUseCase { it }(setup(includeMrWhite = false))
+        val assignments = AssignRolesUseCase { it }(setup(mrWhiteCount = 0))
         assertEquals(1, assignments.count { it.roleId == impostor.id })
         assertEquals(0, assignments.count { it.roleId == mrWhite.id })
         assertEquals(3, assignments.count { it.roleId == civilian.id })
     }
 
-    private fun setup(includeMrWhite: Boolean) = RoundSetup(
+    private fun setup(mrWhiteCount: Int) = RoundSetup(
         roundId = 1,
         players = (1..4).map { GamePlayerEntity(id = it, gameId = 1, playerId = it, seatOrder = it - 1) },
         impostorCount = 1,
-        includeMrWhite = includeMrWhite,
+        mrWhiteCount = mrWhiteCount,
         civilianRole = civilian,
         impostorRole = impostor,
         mrWhiteRole = mrWhite,
