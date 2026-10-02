@@ -19,10 +19,12 @@ nexus_publish = "2.0.0"
 paparazzi = "2.0.0-alpha02"
 room = "2.7.2"
 lucide_icons = "2.2.1"
+lifecycle = "2.9.4"
 target_sdk_version = "36"
-ui = "1.12.1"
 
 [libraries]
+androidx_lifecycle_viewmodel_compose = { module = "androidx.lifecycle:lifecycle-viewmodel-compose", version.ref = "lifecycle" }
+androidx_lifecycle_runtime_compose = { module = "androidx.lifecycle:lifecycle-runtime-compose", version.ref = "lifecycle" }
 junit = { module = "junit:junit", version.ref = "junit" }
 androidx_activity_compose = { module = "androidx.activity:activity-compose", version.ref = "androidx_activity_compose" }
 androidx_appcompat = { module = "androidx.appcompat:appcompat", version.ref = "appcompat" }
@@ -47,7 +49,6 @@ espresso_core = { module = "androidx.test.espresso:espresso-core", version.ref =
 agp = { module = "com.android.tools.build:gradle", version.ref = "agp" }
 kgp = { module = "org.jetbrains.kotlin:kotlin-gradle-plugin", version.ref = "kotlin" }
 lucide_icons = { module = "com.composables:icons-lucide-android", version.ref = "lucide_icons" }
-ui = { group = "androidx.compose.ui", name = "ui", version.ref = "ui" }
 
 [plugins]
 detekt = { id = "io.gitlab.arturbosch.detekt", version.ref = "detekt" }

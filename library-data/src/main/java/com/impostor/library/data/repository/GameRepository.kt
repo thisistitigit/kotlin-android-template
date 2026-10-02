@@ -21,6 +21,16 @@ import com.impostor.library.domain.enums.RoundStatus
 
 @Suppress("TooManyFunctions")
 class GameRepository(private val database: AppDatabase) {
+    private val voting = VotingStore(database)
+
+    suspend fun beginVoting(roundId: Int) = voting.begin(roundId)
+    suspend fun votingSnapshot(roundId: Int) = voting.snapshot(roundId)
+    suspend fun acknowledgeVote(roundId: Int) = voting.acknowledge(roundId)
+    suspend fun revealVotedRole(roundId: Int) = voting.reveal(roundId)
+    suspend fun continueVoting(roundId: Int) = voting.continuePhase(roundId)
+    suspend fun getVotingResult(roundId: Int) = voting.finishedResult(roundId)
+    suspend fun submitMrWhiteGuess(roundId: Int, playerId: Int, text: String) = voting.submitGuess(roundId, playerId, text)
+    suspend fun <T> transaction(block: suspend () -> T): T = database.withTransaction { block() }
     private val gameDao = database.gameDao()
     private val roundDao = database.roundDao()
     private val voteDao = database.voteDao()
@@ -101,15 +111,19 @@ class GameRepository(private val database: AppDatabase) {
             roundDao.updateStatus(roundId, RoundStatus.REVEALING_ROLES)
         }
 
+    suspend fun isLatestFinishedRound(gameId: Int, roundId: Int): Boolean {
+        val round = roundDao.getRound(roundId)
+        return round?.gameId == gameId && round.status == RoundStatus.FINISHED &&
+            roundDao.getNextRoundNumber(gameId) == round.roundNumber + 1
+    }
+
     suspend fun getAssignments(roundId: Int): List<RoundAssignmentDetails> =
         roundDao.getAssignments(roundId)
 
     suspend fun getVotes(roundId: Int): List<VoteEntity> = voteDao.getVotes(roundId)
 
     suspend fun submitVote(vote: VoteEntity) = database.withTransaction {
-        require(roundDao.isPlayerInRound(vote.roundId, vote.voterGamePlayerId)) { "Invalid voter." }
-        require(roundDao.isPlayerInRound(vote.roundId, vote.votedGamePlayerId)) { "Invalid target." }
-        voteDao.insert(vote)
+        voting.submit(vote)
     }
 
     suspend fun submitAnswer(answer: AnswerEntity) = database.withTransaction {

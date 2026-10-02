@@ -15,7 +15,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.stringResource
 import com.impostor.app.ui.screens.HomeScreen
 import com.impostor.app.ui.screens.ImpostorCountScreen
 import com.impostor.app.ui.screens.OnboardingScreen
@@ -24,15 +23,11 @@ import com.impostor.app.ui.screens.PlayerNameRoute
 import com.impostor.app.ui.screens.PlayerNameCallbacks
 import com.impostor.app.ui.screens.PlayerNameUiState
 import com.impostor.app.ui.screens.PlayerCountScreen
-import com.impostor.app.ui.screens.PlayerTurnScreen
-import com.impostor.app.ui.screens.PlayerTurnUiState
 import com.impostor.app.ui.screens.SplashScreen
-import com.impostor.app.ui.screens.TURN_CAT_IMAGES
 import com.impostor.app.ui.screens.TurnPlayerUi
 import com.impostor.library.domain.enums.GameModeType
 import com.impostor.library.domain.enums.RoleType
 import kotlinx.coroutines.delay
-import kotlin.random.Random
 
 private enum class AppDestination {
     SPLASH,
@@ -57,7 +52,7 @@ fun ImpostorApp() {
     var currentPlayerIndex by rememberSaveable { mutableIntStateOf(0) }
     var playerNicknames by rememberSaveable { mutableStateOf(emptyList<String>()) }
     var playerAvatarIndices by rememberSaveable { mutableStateOf(emptyList<Int>()) }
-    var turnCatIndex by rememberSaveable { mutableIntStateOf(0) }
+    var gameSessionKey by rememberSaveable { mutableStateOf(java.util.UUID.randomUUID().toString()) }
     val playerPhotos = remember { mutableStateMapOf<Int, Bitmap>() }
 
     LaunchedEffect(destination) {
@@ -96,7 +91,7 @@ fun ImpostorApp() {
                     currentPlayerIndex = 0
                     destination = AppDestination.PLAYER_NAME
                 },
-                modifier = Modifier.safeDrawingPadding()
+                modifier = Modifier
             )
             AppDestination.PLAYER_NAME -> PlayerNameRoute(
                 state = PlayerNameUiState(
@@ -128,7 +123,7 @@ fun ImpostorApp() {
                     }
                 ),
                 onPhotoTaken = { playerPhotos[currentPlayerIndex] = it },
-                modifier = Modifier.safeDrawingPadding()
+                modifier = Modifier
             )
             AppDestination.IMPOSTOR_COUNT -> ImpostorCountScreen(
                 mode = requireNotNull(selectedMode),
@@ -145,10 +140,10 @@ fun ImpostorApp() {
                 },
                 onContinue = {
                     currentPlayerIndex = 0
-                    turnCatIndex = Random.nextInt(TURN_CAT_IMAGES.size)
+                    gameSessionKey = java.util.UUID.randomUUID().toString()
                     destination = AppDestination.PLAYER_TURN
                 },
-                modifier = Modifier.safeDrawingPadding()
+                modifier = Modifier
             )
             AppDestination.PLAYER_TURN -> {
                 val players = playerNicknames.mapIndexed { index, nickname ->
@@ -158,31 +153,10 @@ fun ImpostorApp() {
                         photo = playerPhotos[index]
                     )
                 }
-                PlayerTurnScreen(
-                    state = PlayerTurnUiState(
-                        currentPlayer = players[currentPlayerIndex],
-                        viewedPlayers = players.take(currentPlayerIndex),
-                        catRes = TURN_CAT_IMAGES[turnCatIndex],
-                        actionLabel = stringResource(
-                            if (selectedMode == GameModeType.QUESTION) {
-                                com.impostor.library.compose.R.string.see_question
-                            } else {
-                                com.impostor.library.compose.R.string.see_word
-                            }
-                        )
-                    ),
-                    onBack = {
-                        destination = AppDestination.IMPOSTOR_COUNT
-                        currentPlayerIndex = playerCount - 1
-                    },
-                    onSeeContent = {
-                        // Temporary hand-off until ContentRevealScreen from docs/NEXT_GAME_SCREENS.md is implemented.
-                        if (currentPlayerIndex < players.lastIndex) {
-                            currentPlayerIndex++
-                            turnCatIndex = Random.nextInt(TURN_CAT_IMAGES.size)
-                        }
-                    },
-                    modifier = Modifier.safeDrawingPadding()
+                com.impostor.app.ui.screens.GameFlowRoute(
+                    setup = com.impostor.app.ui.screens.GameFlowSetup(requireNotNull(selectedMode), impostorCount, mrWhiteCount, players),
+                    sessionKey = gameSessionKey,
+                    onExit = { destination = AppDestination.HOME }
                 )
             }
         }

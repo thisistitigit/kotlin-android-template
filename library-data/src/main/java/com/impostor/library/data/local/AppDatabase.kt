@@ -23,6 +23,7 @@ import com.impostor.library.data.local.entity.RoundAssignmentEntity
 import com.impostor.library.data.local.entity.RoundEntity
 import com.impostor.library.data.local.entity.ScoreEventEntity
 import com.impostor.library.data.local.entity.VoteEntity
+import com.impostor.library.data.local.entity.VotingPhaseEntity
 
 @Database(
     entities = [
@@ -38,9 +39,10 @@ import com.impostor.library.data.local.entity.VoteEntity
         RoundAssignmentEntity::class,
         AnswerEntity::class,
         VoteEntity::class,
+        VotingPhaseEntity::class,
         ScoreEventEntity::class
     ],
-    version = 1,
+    version = 3,
     exportSchema = true
 )
 @TypeConverters(Converters::class)

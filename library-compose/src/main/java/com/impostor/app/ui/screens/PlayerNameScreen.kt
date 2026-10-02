@@ -9,7 +9,6 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -17,7 +16,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.offset
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.CircleShape
@@ -44,9 +42,8 @@ import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import com.impostor.app.ui.components.AppButton
-import com.impostor.app.ui.components.AppButtonStyle
-import com.impostor.app.ui.components.AppHeader
+import com.impostor.app.ui.components.GameScreenLayout
+import com.impostor.app.ui.components.GameActionButton
 import com.impostor.app.ui.components.PlayerAvatar
 import com.impostor.app.ui.components.TitleBanner
 import com.impostor.app.ui.theme.AppTextStyles
@@ -104,11 +101,9 @@ fun PlayerNameScreen(
         val compact = maxHeight < COMPACT_PLAYER_NAME_HEIGHT
         val bannerHeight = if (compact) 136.dp else 194.dp
         val avatarSize = if (compact) 96.dp else 126.dp
-        Column(
-            modifier = Modifier.fillMaxSize(),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            AppHeader(onBack = callbacks.onBack, modifier = Modifier.padding(horizontal = Spacing.medium))
+        GameScreenLayout(callbacks.onBack, contentPadding = 0.dp,
+            bottomAction = { GameActionButton(stringResource(R.string.next), callbacks.onContinue,
+                enabled = state.nickname.isNotBlank()) }) {
             Spacer(Modifier.height(if (compact) 4.dp else Spacing.medium))
             Row(horizontalArrangement = Arrangement.Center) {
                 Text(text = stringResource(R.string.player_label), style = AppTextStyles.title, color = AppWhite)
@@ -141,15 +136,7 @@ fun PlayerNameScreen(
                 },
                 modifier = Modifier.fillMaxWidth().widthIn(max = 295.dp)
             )
-            Spacer(Modifier.weight(1f))
-            AppButton(
-                text = stringResource(R.string.next),
-                onClick = callbacks.onContinue,
-                enabled = state.nickname.isNotBlank(),
-                style = AppButtonStyle.SECONDARY,
-                modifier = Modifier.fillMaxWidth().widthIn(max = 172.dp)
-            )
-            Spacer(Modifier.height(if (compact) Spacing.medium else Spacing.extraLarge))
+
         }
     }
 }

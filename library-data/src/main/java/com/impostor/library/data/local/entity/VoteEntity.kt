@@ -10,6 +10,12 @@ import androidx.room.PrimaryKey
     tableName = "votes",
     foreignKeys = [
         ForeignKey(
+            entity = VotingPhaseEntity::class,
+            parentColumns = ["phase_id"],
+            childColumns = ["phase_id"],
+            onDelete = ForeignKey.CASCADE
+        ),
+        ForeignKey(
             entity = RoundEntity::class,
             parentColumns = ["round_id"],
             childColumns = ["round_id"],
@@ -32,7 +38,8 @@ import androidx.room.PrimaryKey
         Index("round_id"),
         Index("voter_game_player_id"),
         Index("voted_game_player_id"),
-        Index(value = ["round_id", "voter_game_player_id"], unique = true)
+        Index("phase_id"),
+        Index(value = ["phase_id", "voter_game_player_id"], unique = true)
     ]
 )
 data class VoteEntity(
@@ -42,6 +49,9 @@ data class VoteEntity(
 
     @ColumnInfo(name = "round_id")
     val roundId: Int,
+
+    @ColumnInfo(name = "phase_id")
+    val phaseId: Int,
 
     @ColumnInfo(name = "voter_game_player_id")
     val voterGamePlayerId: Int,

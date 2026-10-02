@@ -2,7 +2,12 @@ package com.impostor.app.ui.screens
 
 import app.cash.paparazzi.DeviceConfig
 import app.cash.paparazzi.Paparazzi
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.requiredSize
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
 import com.android.ide.common.rendering.api.SessionParams
+import com.android.resources.Density
 import org.junit.Rule
 import org.junit.Test
 
@@ -53,14 +58,40 @@ class ComposePreviewer {
         if (shouldRender("PlayerTurnPreview")) {
             paparazzi.snapshot(name = "PlayerTurnPreview") { PlayerTurnPreview() }
         }
-        if (shouldRender("WordRevealPreview")) {
-            paparazzi.snapshot(name = "WordRevealPreview") { WordRevealPreview() }
-        }
         if (shouldRender("QuestionRevealPreview")) {
             paparazzi.snapshot(name = "QuestionRevealPreview") { QuestionRevealPreview() }
         }
         if (shouldRender("MrWhiteRevealPreview")) {
             paparazzi.snapshot(name = "MrWhiteRevealPreview") { MrWhiteRevealPreview() }
         }
+        if (shouldRender("VoteIntroPreview")) paparazzi.snapshot(name = "VoteIntroPreview") { VoteIntroPreview() }
+        if (shouldRender("VoteSmallPreview")) paparazzi.snapshot(name = "VoteSmallPreview") {
+            Box(Modifier.requiredSize(320.dp, 480.dp)) { VoteSmallPreview() }
+        }
+        if (shouldRender("VoteSelectionPreview")) paparazzi.snapshot(name = "VoteSelectionPreview") { VoteSelectionPreview() }
+        if (shouldRender("VoteLockedPreview")) paparazzi.snapshot(name = "VoteLockedPreview") { VoteLockedPreview() }
+        if (shouldRender("VoteResultsPreview")) paparazzi.snapshot(name = "VoteResultsPreview") { VoteResultsPreview() }
+        if (shouldRender("VoteTiePreview")) paparazzi.snapshot(name = "VoteTiePreview") { VoteTiePreview() }
+        if (shouldRender("CivilianEndPreview")) paparazzi.snapshot(name = "CivilianEndPreview") { CivilianEndPreview() }
+        if (shouldRender("ImpostorEndPreview")) paparazzi.snapshot(name = "ImpostorEndPreview") { ImpostorEndPreview() }
+        if (shouldRender("MrWhiteEndPreview")) paparazzi.snapshot(name = "MrWhiteEndPreview") { MrWhiteEndPreview() }
+        if (shouldRender("GuessSmallPreview")) paparazzi.snapshot(name = "GuessSmallPreview") { Box(Modifier.requiredSize(320.dp, 568.dp)) { GuessSmallPreview() } }
+        if (shouldRender("WordEndPreview")) paparazzi.snapshot(name = "WordEndPreview") { WordEndPreview() }
+        if (shouldRender("QuestionEndPreview")) paparazzi.snapshot(name = "QuestionEndPreview") { QuestionEndPreview() }
+        if (shouldRender("SummaryEndPreview")) paparazzi.snapshot(name = "SummaryEndPreview") { SummaryEndPreview() }
+        if (shouldRender("CategoryPreview")) paparazzi.snapshot(name = "CategoryPreview") { CategoryPreview() }
+        if (shouldRender("CategorySmallPreview")) paparazzi.snapshot(name = "CategorySmallPreview") {
+            Box(Modifier.requiredSize(320.dp, 480.dp)) { CategorySmallPreview() }
+        }
+        if (shouldRender("CategoryLargePreview")) {
+            paparazzi.unsafeUpdateConfig(deviceConfig = DeviceConfig.PIXEL_5.copy(
+                screenWidth = 1600, screenHeight = 1200, density = Density.XHIGH))
+            paparazzi.snapshot(name = "CategoryLargePreview") { CategoryLargePreview() }
+            paparazzi.unsafeUpdateConfig(deviceConfig = DeviceConfig.PIXEL_5)
+        }
+        if (shouldRender("CategoryActorsPreview")) paparazzi.snapshot(name = "CategoryActorsPreview") { CategoryActorsPreview() }
+        if (shouldRender("CategoryMoviesPreview")) paparazzi.snapshot(name = "CategoryMoviesPreview") { CategoryMoviesPreview() }
+        if (shouldRender("CategoryFootballPreview")) paparazzi.snapshot(name = "CategoryFootballPreview") { CategoryFootballPreview() }
+        if (shouldRender("CategorySingersPreview")) paparazzi.snapshot(name = "CategorySingersPreview") { CategorySingersPreview() }
     }
 }

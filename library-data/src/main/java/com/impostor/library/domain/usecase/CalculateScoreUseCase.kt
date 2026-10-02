@@ -7,6 +7,34 @@ import com.impostor.library.domain.model.RoundResult
 import com.impostor.library.domain.model.ScoreCalculation
 
 class CalculateScoreUseCase {
+    fun sequential(
+        roundId: Int,
+        playerRoles: Map<Int, RoleType>,
+        eliminated: Set<Int>,
+        ballots: List<com.impostor.library.domain.model.Ballot>,
+        mrWhiteWinnerId: Int? = null
+    ): ScoreCalculation {
+        require(playerRoles.isNotEmpty() && RoleType.IMPOSTOR in playerRoles.values)
+        require(eliminated.all { it in playerRoles })
+        require(ballots.all { it.voterId in playerRoles && it.candidateId in playerRoles && it.voterId != it.candidateId })
+        val roles = RoundRoles(
+            playerRoles.keys,
+            playerRoles.filterValues { it == RoleType.IMPOSTOR }.keys,
+            playerRoles.filterValues { it == RoleType.MR_WHITE }.keys
+        )
+        require(mrWhiteWinnerId == null || mrWhiteWinnerId in roles.mrWhiteIds && mrWhiteWinnerId in eliminated)
+        val civiliansWon = (roles.impostorIds + roles.mrWhiteIds).all { it in eliminated }
+        val winners = if (mrWhiteWinnerId != null) setOf(RoleType.MR_WHITE) else if (civiliansWon) setOf(RoleType.CIVILIAN) else buildSet {
+            add(RoleType.IMPOSTOR)
+            if (roles.mrWhiteIds.isNotEmpty()) add(RoleType.MR_WHITE)
+        }
+        val events = ballots.flatMap { voteEvents(roundId, mapOf(it.voterId to it.candidateId), roles) } +
+            winnerEvents(roundId, roles, mrWhiteWinnerId, winners)
+        val scores = events.groupBy { it.gamePlayerId }.mapValues { (_, values) -> values.sumOf { it.points } }
+        return ScoreCalculation(
+            RoundResult(roundId, eliminated, roles.impostorIds, roles.mrWhiteIds, mrWhiteWinnerId, winners, scores), events
+        )
+    }
     @Suppress("LongParameterList")
     operator fun invoke(
         roundId: Int,

@@ -1,6 +1,6 @@
 # Impostor
 
-Aplicação Android local para jogos sociais, escrita em Kotlin, Room e Jetpack Compose. O fluxo visual implementado é `Splash → Onboarding → New Game → Players → Player names → Impostors → Player turn`; o backend guarda jogadores, sessões, rondas, papéis, conteúdo, votos e pontuação.
+Aplicação Android local para jogos sociais, escrita em Kotlin, Room e Jetpack Compose. O fluxo visual implementado é `Splash → Onboarding → New Game → Players → Player names → Impostors → Content setup → Player turn → Content reveal → Everyone Ready → Voting → Results → Role reveal`; o backend guarda jogadores, sessões, rondas, papéis, conteúdo, votos e pontuação.
 
 ## Executar e validar
 
@@ -40,7 +40,7 @@ val gameId = backend.createGame(
 )
 ```
 
-Em cada ronda, cada Mr. White é escolhido entre jogadores que não são impostores e recebe sempre `contentId = null`, que representa a palavra vazia. O valor zero desativa este papel. Se um Mr. White eliminado adivinhar a palavra, passa o respetivo `gamePlayerId` como `mrWhiteGuesserId` ao fechar a ronda e recebe a vitória própria. A classificação é calculada a partir de `score_events`, a única fonte de verdade para pontos.
+Em Classic, cada Mr. White é escolhido entre jogadores que não são impostores e recebe sempre `contentId = null`, que representa a palavra vazia. O valor zero desativa este papel; outros modos não o atribuem. O cálculo legado de pontuação suporta `mrWhiteGuesserId`, mas o novo fluxo de votação sequencial termina por eliminação e não inclui um ecrã de adivinhação. A classificação é calculada a partir de `score_events`, a única fonte de verdade para pontos.
 
 Inicializa o backend uma vez, idealmente num container de dependências da aplicação:
 
@@ -174,6 +174,128 @@ Ao criar um componente novo:
 
 O botão `Continue` no New Game só fica ativo após escolher um modo. Players permite escolher entre 3 e 10 jogadores; o ecrã seguinte limita adversários para preservar pelo menos um civil. Classic permite quantidades independentes de Impostor e Mr. White, enquanto Questions fixa o seletor em Impostor e mantém `mrWhiteCount = 0`. O onboarding ainda é mostrado em cada arranque; guarda a conclusão em DataStore quando quiseres mostrá-lo apenas na primeira utilização.
 
-O schema Room é exportado para `library-data/schemas`. Como esta base ainda está na versão 1, as entidades foram normalizadas diretamente. Depois de publicares uma versão da app, qualquer alteração ao schema deve incrementar a versão e incluir uma migration testada.
+O schema Room é exportado para `library-data/schemas`. A base está na versão 2, com migração v1→v2 testada que conserva os votos anteriores. Qualquer alteração futura ao schema deve incrementar a versão e incluir uma migration testada.
 
 O [README original do template](README.upstream.md) continua disponível para referência.
+
+## Votação
+
+O percurso integrado é preparação de conteúdo real → passagem/revelação individual → Everyone Ready →
+Vote → seleção → Vote Locked → resultados → revelação do papel. `GameFlowViewModel` mantém o estado
+durante mudanças de configuração; os composables de votação recebem apenas estado e callbacks.
+
+Adicionar manualmente, sem alterar os nomes:
+
+| Ecrã | Ficheiro |
+| --- | --- |
+| Vote, it’s your turn | `library-compose/src/main/res/drawable-nodpi/pointing_cat.png` |
+| Vote Locked | `library-compose/src/main/res/drawable-nodpi/locked_cat.png` |
+
+Os PNGs não foram criados. Enquanto não existirem, surge um placeholder textual com o nome do ficheiro
+e espaço reservado. Depois de adicionar os PNGs, reconstruir a app. Não há imagens alternativas.
+
+`VotingDestination` representa o destino; `VotingSnapshot` representa as regras e transições persistidas.
+`SubmitVoteUseCase` recebe agora `roundId`, `phaseId`, `voterId` e `votedPlayerId`. Cada fase congela os IDs
+dos votantes/candidatos. Estes conjuntos são listas de IDs serializadas na entidade da fase, validadas
+transacionalmente contra as atribuições da ronda, sem usar posições da UI como identidade.
+O índice único `(phase_id, voter_game_player_id)` impede votos duplicados.
+O esquema Room v2 inclui migração v1→v2 que conserva os votos antigos.
+
+Todos os jogadores ativos votam pela ordem dos lugares, sem votar em si próprios. A confirmação bloqueia
+o voto e exige passagem do telemóvel; só depois do último Got it aparecem resultados. Empates criam
+outra fase com o mesmo eleitorado e apenas os candidatos empatados; empates repetidos continuam sem
+eliminação automática. O Back em Vote Locked confirma a passagem, nunca reabre o voto.
+O Back na seleção regressa à introdução e descarta a seleção ainda não submetida.
+
+Apenas Reveal Role elimina o candidato mais votado. Eliminados deixam de votar e de ser candidatos.
+Procuram-se os Impostors primeiro, depois os Mr. Whites restantes; Questions não admite Mr. White.
+A ronda termina quando todos os adversários foram eliminados ou não restam civis ativos. As fases
+resolvidas atribuem 2 pontos por voto correto e 3 pontos aos vencedores da ronda; os votos de fases
+empatadas ficam no histórico e não atribuem pontos. A revelação, eliminação e pontuação final são atómicas.
+Este fluxo de votação não acrescenta uma tentativa de adivinhação da palavra por Mr. White.
+
+Para reutilizar a UI, usar `PlayerChip` para identificação, `PrivacyCard(text)` para avisos privados,
+`VoteCandidateCard` para seleção e `VoterAvatars` para listas acessíveis sem cortes. `VotingFrame` centraliza
+header, insets, largura máxima e scroll quando necessário. Novas mensagens pertencem a `strings.xml`;
+novas cores e estilos pertencem a `Color.kt` e `Typography.kt`. Os previews de votação são independentes
+de Activity, ViewModel e Room e incluem 320×480, oito candidatos e empate.
+
+
+### Revelação e fim da ronda
+
+O fluxo usa `RoleRevealScreen` (Civilian, Impostor e Mr. White), `MrWhiteGuessScreen`,
+`RoundContentRevealScreen` (palavra ou pergunta), `RoundSummaryScreen` e `ScoresScreen`.
+Os ecrãs recebem estado imutável e callbacks; as transições e a pontuação ficam no domínio/ViewModel.
+O cartão `SecretContentCard` e o layout `GameScreenLayout` são partilhados com os ecrãs existentes.
+
+Assets PNG adicionados manualmente, sem imagens geradas:
+
+| Ecrã | Caminho |
+| --- | --- |
+| Civilian / The Word Was | `library-compose/src/main/res/drawable-nodpi/civilian_reveal_cat.png` |
+| Guess The Word | `library-compose/src/main/res/drawable-nodpi/guess_word_cat.png` |
+| Impostor descoberto | `library-compose/src/main/res/drawable/impostor.png` (existente) |
+| Mr. White descoberto | `library-compose/src/main/res/drawable/mr_white.png` (existente) |
+| The Question Was / Game Over | `library-compose/src/main/res/drawable/win.png` (existente) |
+
+Os dois novos assets apresentam um placeholder com o nome enquanto não forem adicionados.
+Não adicionar outro ficheiro com o mesmo nome em `drawable` e `drawable-nodpi`.
+
+Mr. White tem uma única tentativa privada por eliminação. A comparação normaliza espaços,
+Unicode e maiúsculas/minúsculas, mantendo acentos significativos. A migração Room 2→3
+preserva o histórico e guarda a tentativa na respetiva fase. Não é possível continuar
+ou pontuar enquanto a tentativa estiver pendente. Acertar termina a ronda com vitória
+individual de Mr. White; falhar permite continuar se ainda existirem Civilians e adversários.
+Só após o fim da ronda é revelado o conteúdo público.
+
+`New Game` prepara outra ronda da mesma sessão e mantém a classificação, podendo mudar
+entre Classic e Questions na preparação. Questions nunca atribui Mr. White. A pontuação
+apresentada vem do domínio: +2 por voto correto, +3 por vitória e +7 pela vitória individual
+de Mr. White. `View Scores` apresenta o total acumulado da sessão.
+
+
+### Layout comum e seleção de categorias
+
+Todos os ecrãs do jogo após Home usam `GameScreenLayout`: header comum, área de conteúdo
+adaptativa e ação principal centrada, com margem inferior de `Spacing.extraLarge` (32dp)
+a partir da zona segura do dispositivo. O teclado é tratado com `imePadding` nos ecrãs
+com input. O botão não se desloca quando o conteúdo cresce; apenas o conteúdo faz scroll.
+A ação secundária do resumo (View Scores) fica acima da ação principal, mantendo a sua posição.
+`GameActionButton` reutiliza AppButton, com largura de 172dp e estilo configurável.
+
+Para acrescentar um ecrã:
+
+```kotlin
+GameScreenLayout(
+    onBack = onBack,
+    bottomAction = { GameActionButton(actionLabel, onContinue) }
+) {
+    // Conteúdo; não acrescentar outro header, botão final ou Spacer inferior.
+}
+```
+
+Para uma grelha/pager que já faz scroll, usar `scrollContent = false` e `Modifier.weight(1f)`
+na área central. Para conteúdo longo, manter o scroll do layout. Usar a mesma margem inferior
+em todos os ecrãs; estilos diferentes não devem alterar o posicionamento da ação principal.
+
+Questions apresenta `CategoryScreen` antes da preparação do conteúdo, também em novas rondas
+na mesma sessão. O carrossel suporta gestos e toque, destaca o cartão central e reutiliza
+`PageIndicator` com onboarding. A categoria escolhida é guardada como chave estável no campo
+`category` de `ContentSetEntity`; Classic continua sem categoria. O ZIP só contém ilustrações:
+a preparação das perguntas existentes é mantida, sem inventar um banco de perguntas.
+
+| Categoria | SVG original importado do ZIP |
+| --- | --- |
+| Atores | `library-compose/src/main/res/raw/category_actors.svg` |
+| Filmes | `library-compose/src/main/res/raw/category_movies.svg` |
+| NBA | `library-compose/src/main/res/raw/category_nba.svg` |
+| Futebol | `library-compose/src/main/res/raw/category_football.svg` |
+| Séries | `library-compose/src/main/res/raw/category_series.svg` |
+| Cantores | `library-compose/src/main/res/raw/category_singers.svg` |
+
+Android não suporta SVG diretamente em `res/drawable`. Estes ficheiros excedem os limites
+de tamanho de paths compilados de VectorDrawable. Por isso os SVGs originais são preservados
+em `res/raw` e desenhados com `rememberSvgPainter`/`CategoryCard`, sem conversão para PNG ou
+bibliotecas adicionais. O adaptador suporta o formato destes assets: viewBox com origem 0,0,
+paths, fill-rule, fill, stroke, stroke-width e stroke-linejoin. Novos SVGs com grupos,
+transforms, gradientes, texto ou filtros precisam de normalização antes de serem usados.

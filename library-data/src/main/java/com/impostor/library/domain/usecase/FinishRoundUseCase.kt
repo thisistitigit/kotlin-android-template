@@ -9,6 +9,7 @@ class FinishRoundUseCase(
     private val calculateScore: CalculateScoreUseCase
 ) {
     suspend operator fun invoke(roundId: Int, mrWhiteGuesserId: Int? = null): RoundResult {
+        repository.getVotingResult(roundId)?.let { return it }
         val assignments = repository.getAssignments(roundId)
         require(assignments.isNotEmpty()) { "The round has no role assignments." }
         val votes = repository.getVotes(roundId).associate {

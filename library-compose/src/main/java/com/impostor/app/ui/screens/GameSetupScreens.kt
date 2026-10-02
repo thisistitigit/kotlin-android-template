@@ -8,7 +8,6 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
@@ -19,7 +18,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.Text
 import androidx.compose.material.Icon
@@ -35,10 +33,10 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
-import com.impostor.app.ui.components.AppButton
+import com.impostor.app.ui.components.GameScreenLayout
+import com.impostor.app.ui.components.GameActionButton
 import com.impostor.app.ui.components.AppButtonStyle
 import com.impostor.app.ui.components.AppCard
-import com.impostor.app.ui.components.AppHeader
 import com.impostor.app.ui.components.NumberSelector
 import com.impostor.app.ui.components.NumberSummaryPosition
 import com.impostor.app.ui.components.RoleOption
@@ -72,7 +70,6 @@ fun PlayerCountScreen(
         onContinue = onContinue,
         modifier = modifier
     ) {
-        Spacer(Modifier.weight(1f))
         NumberSelector(
             values = MIN_PLAYERS..MAX_PLAYERS,
             selectedValue = playerCount,
@@ -80,7 +77,6 @@ fun PlayerCountScreen(
             summaryPosition = NumberSummaryPosition.ABOVE,
             modifier = Modifier.fillMaxWidth()
         )
-        Spacer(Modifier.weight(1.2f))
     }
 }
 
@@ -127,14 +123,12 @@ fun ImpostorCountScreen(
         modifier = modifier,
         continueEnabled = impostorCount + mrWhiteCount < playerCount
     ) {
-        Spacer(Modifier.height(Spacing.extraLarge))
         RoleSelector(
             options = roleOptions,
             selectedRole = role,
             onRoleSelected = onRoleSelected,
             modifier = Modifier.padding(horizontal = Spacing.large)
         )
-        Spacer(Modifier.weight(1f))
         NumberSelector(
             values = range,
             selectedValue = selectedCount,
@@ -146,7 +140,6 @@ fun ImpostorCountScreen(
             formatValue = { it.toString().padStart(2, '0') },
             modifier = Modifier.fillMaxWidth()
         )
-        Spacer(Modifier.weight(0.8f))
     }
 }
 
@@ -170,45 +163,13 @@ fun PlayerTurnScreen(
     onSeeContent: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    BoxWithConstraints(modifier = modifier.fillMaxSize().background(AppBackground)) {
-        val compact = maxHeight < COMPACT_HEIGHT
-        Column(
-            modifier = Modifier.fillMaxSize().padding(horizontal = Spacing.medium),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            AppHeader(onBack = onBack)
-            Spacer(Modifier.height(if (compact) Spacing.small else Spacing.large))
-            Row(horizontalArrangement = Arrangement.Center) {
-                Text(text = state.currentPlayer.name.uppercase(), style = AppTextStyles.title, color = AppWhite)
-                Text(text = stringResource(R.string.turn_suffix), style = AppTextStyles.title, color = MainPurple)
-            }
-            Text(
-                text = stringResource(R.string.pass_phone_to, state.currentPlayer.name),
-                style = androidx.compose.material.MaterialTheme.typography.body1,
-                color = AppWhite.copy(alpha = 0.82f)
-            )
-            Image(
-                painter = painterResource(state.catRes),
-                contentDescription = null,
-                contentScale = ContentScale.Fit,
-                modifier = Modifier.size(if (compact) 210.dp else 292.dp)
-            )
-            Spacer(Modifier.weight(1f))
-            ViewedPlayersCard(
-                viewedPlayers = state.viewedPlayers,
-                currentPlayer = state.currentPlayer,
-                compact = compact,
-                modifier = Modifier.fillMaxWidth()
-            )
-            Spacer(Modifier.height(if (compact) Spacing.medium else 30.dp))
-            AppButton(
-                text = state.actionLabel,
-                onClick = onSeeContent,
-                style = AppButtonStyle.SECONDARY,
-                modifier = Modifier.width(172.dp)
-            )
-            Spacer(Modifier.height(Spacing.medium))
-        }
+    GameScreenLayout(onBack, modifier, contentArrangement = Arrangement.spacedBy(Spacing.medium),
+        bottomAction = { GameActionButton(state.actionLabel, onSeeContent) }) {
+        Text(state.currentPlayer.name.uppercase() + stringResource(R.string.turn_suffix),
+            style = AppTextStyles.title, color = MainPurple, textAlign = TextAlign.Center)
+        Text(stringResource(R.string.pass_phone_to, state.currentPlayer.name), color = AppWhite)
+        Image(painterResource(state.catRes), null, contentScale = ContentScale.Fit, modifier = Modifier.size(220.dp))
+        ViewedPlayersCard(state.viewedPlayers, state.currentPlayer, compact = true, modifier = Modifier.fillMaxWidth())
     }
 }
 
@@ -295,29 +256,15 @@ private fun SetupScreen(
     continueEnabled: Boolean = true,
     content: @Composable ColumnScope.() -> Unit
 ) {
-    Column(
-        modifier = modifier.fillMaxSize().background(AppBackground),
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        AppHeader(onBack = onBack, modifier = Modifier.padding(horizontal = Spacing.medium))
-        Spacer(Modifier.height(Spacing.small))
-        Text(
-            text = stringResource(R.string.how_many),
-            style = AppTextStyles.title,
-            color = AppWhite,
-            textAlign = TextAlign.Center
-        )
-        Text(text = title, style = AppTextStyles.title, color = MainPurple, textAlign = TextAlign.Center)
+    GameScreenLayout(onBack, modifier, contentPadding = 0.dp, contentArrangement = Arrangement.SpaceEvenly,
+        bottomAction = { GameActionButton(stringResource(R.string.continue_label), onContinue,
+            continueEnabled, AppButtonStyle.OUTLINED) }) {
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Text(stringResource(R.string.how_many), style = AppTextStyles.title, color = AppWhite,
+                textAlign = TextAlign.Center)
+            Text(title, style = AppTextStyles.title, color = MainPurple, textAlign = TextAlign.Center)
+        }
         content()
-        AppButton(
-            text = stringResource(R.string.continue_label),
-            onClick = onContinue,
-            enabled = continueEnabled,
-            style = AppButtonStyle.OUTLINED,
-            showShadow = true,
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 72.dp)
-        )
-        Spacer(Modifier.height(Spacing.extraLarge))
     }
 }
 

@@ -8,6 +8,7 @@ import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -19,7 +20,10 @@ import com.impostor.app.ui.theme.MainPurple
 fun TitleBanner(
     text: String,
     modifier: Modifier = Modifier,
-    height: Dp = DEFAULT_BANNER_HEIGHT
+    height: Dp = DEFAULT_BANNER_HEIGHT,
+    backgroundColor: Color = MainPurple,
+    oval: Boolean = false,
+    content: (@Composable () -> Unit)? = null
 ) {
     Box(
         modifier = Modifier
@@ -35,13 +39,14 @@ fun TitleBanner(
             val path = Path().apply {
                 moveTo(0f, topEdge)
                 quadraticTo(size.width / 2f, topControl, size.width, topEdge)
-                lineTo(size.width, size.height)
-                quadraticTo(size.width / 2f, bottomControl, 0f, size.height)
+                lineTo(size.width, if (oval) size.height * OVAL_EDGE_RATIO else size.height)
+                quadraticTo(size.width / 2f, if (oval) size.height * OVAL_CONTROL_RATIO else bottomControl,
+                    0f, if (oval) size.height * OVAL_EDGE_RATIO else size.height)
                 close()
             }
-            drawPath(path, MainPurple)
+            drawPath(path, backgroundColor)
         }
-        if (text.isNotEmpty()) {
+        if (content != null) content() else if (text.isNotEmpty()) {
             Text(text = text, style = AppTextStyles.title, color = AppWhite)
         }
     }
@@ -50,3 +55,6 @@ private val DEFAULT_BANNER_HEIGHT = 150.dp
 private const val TOP_EDGE_RATIO = 0.2f
 private const val TOP_CONTROL_RATIO = -0.2f
 private const val BOTTOM_CONTROL_RATIO = 0.68f
+
+private const val OVAL_EDGE_RATIO = 0.8f
+private const val OVAL_CONTROL_RATIO = 1.2f

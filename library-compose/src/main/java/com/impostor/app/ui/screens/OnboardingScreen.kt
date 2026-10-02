@@ -31,6 +31,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.impostor.app.ui.components.PageIndicator
 import com.impostor.app.ui.components.AppButton
 import com.impostor.app.ui.components.AppButtonStyle
 import com.impostor.app.ui.components.AppCard
@@ -180,21 +181,7 @@ private fun PageCenterContent(
             Spacer(Modifier.height(Spacing.large))
         }
 
-        PageIndicator(selectedIndex = pageIndex - 1)
-    }
-}
-
-@Composable
-private fun PageIndicator(selectedIndex: Int) {
-    Row(horizontalArrangement = Arrangement.spacedBy(Spacing.small)) {
-        repeat(ONBOARDING_CARD_COUNT) { index ->
-            Box(
-                Modifier
-                    .size(width = if (index == selectedIndex) 24.dp else 12.dp, height = 5.dp)
-                    .clip(CircleShape)
-                    .background(if (index == selectedIndex) AppWhite else LightPurple.copy(alpha = 0.45f))
-            )
-        }
+        PageIndicator(count = ONBOARDING_CARD_COUNT, selectedIndex = pageIndex - 1, idleColor = LightPurple.copy(alpha = 0.45f))
     }
 }
 

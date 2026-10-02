@@ -17,7 +17,7 @@ class StartConfiguredRoundUseCase(
         civilianContent: ContentEntity?,
         impostorContent: ContentEntity?,
         contentSetId: Int? = civilianContent?.contentSetId
-    ): Long {
+    ): Long = repository.transaction {
         repository.prepareDefaults()
         val game = requireNotNull(repository.getGame(gameId)) { "Game not found." }
         val modeId = requireNotNull(repository.getMode(mode)?.id)
@@ -26,7 +26,7 @@ class StartConfiguredRoundUseCase(
             roundId = roundId,
             players = game.players.map { it.gamePlayer },
             impostorCount = game.game.impostorCount,
-            mrWhiteCount = game.game.mrWhiteCount,
+            mrWhiteCount = if (mode == GameModeType.CLASSIC) game.game.mrWhiteCount else 0,
             civilianRole = requireNotNull(repository.getRole(RoleType.CIVILIAN)),
             impostorRole = requireNotNull(repository.getRole(RoleType.IMPOSTOR)),
             mrWhiteRole = repository.getRole(RoleType.MR_WHITE),
@@ -34,6 +34,6 @@ class StartConfiguredRoundUseCase(
             impostorContent = impostorContent
         )
         repository.saveAssignments(roundId, assignRoles(setup))
-        return roundId.toLong()
+        roundId.toLong()
     }
 }

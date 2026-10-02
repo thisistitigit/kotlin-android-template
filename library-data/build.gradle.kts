@@ -29,6 +29,7 @@ android {
         warningsAsErrors = true
         abortOnError = true
     }
+    testOptions { unitTests.isIncludeAndroidResources = true }
 }
 
 ksp {
@@ -46,4 +47,6 @@ dependencies {
     implementation(libs.androidx.room.ktx)
     ksp(libs.androidx.room.compiler)
     testImplementation(libs.junit)
+    testImplementation("org.robolectric:robolectric:4.16.1")
+    testImplementation("androidx.test:core:1.7.0")
 }
