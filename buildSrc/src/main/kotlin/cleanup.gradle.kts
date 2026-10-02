@@ -23,23 +23,23 @@ tasks.register("templateCleanup") {
         }
 
         file("settings.gradle.kts").replace(
-            "rootProject.name = (\"kotlin-android-template\")",
+            "rootProject.name = (\"impostor\")",
             "rootProject.name = (\"$name\")"
         )
         file("gradle.properties").replace(
-            "com.ncorti.kotlin.template",
+            "com.impostor",
             "com.github.$owner.$name"
         )
 
         file("buildSrc/src/main/kotlin/publish.gradle.kts").apply {
-            replace("cortinico/kotlin-android-template", "$owner/$name")
-            replace("cortinico/kotlin-android-template", "$owner/$name")
+            replace("cortinico/impostor", "$owner/$name")
+            replace("cortinico/impostor", "$owner/$name")
             replace("cortinico", owner)
             replace("Nicola Corti", owner)
             // Keep the link to the original script
             replace(
                 "* https://github.com/$owner/$name/blob/master/buildSrc/src/main/kotlin/publish.gradle.kts",
-                "* https://github.com/cortinico/kotlin-android-template/blob/master/buildSrc/src/main/kotlin/publish.gradle.kts"
+                "* https://github.com/cortinico/impostor/blob/master/buildSrc/src/main/kotlin/publish.gradle.kts"
             )
         }
 
@@ -93,7 +93,7 @@ fun changePackageName(owner: String, name: String) {
         it.walk().filter {
             it.isFile && (it.extension == "kt" || it.extension == "kts" || it.extension == "xml")
         }.forEach {
-            it.replace("com.ncorti.kotlin.template", "com.github.$owner.$name")
+            it.replace("com.impostor", "com.github.$owner.$name")
         }
     }
     srcDirectories().forEach {
@@ -102,8 +102,8 @@ fun changePackageName(owner: String, name: String) {
             .forEach {
                 val newDir = File(it, "com/github/$owner/$name")
                 newDir.parentFile.mkdirs()
-                File(it, "com/ncorti/kotlin/template").renameTo(newDir)
-                File(it, "com/ncorti").deleteRecursively()
+                File(it, "com/impostor").renameTo(newDir)
+                File(it, "com/impostor").deleteRecursively()
             }
     }
 }

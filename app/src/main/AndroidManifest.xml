@@ -12,7 +12,7 @@
         tools:ignore="AllowBackup">
         <activity android:name=".MainActivity"
             android:exported="false" />
-        <activity android:name="com.ncorti.kotlin.template.app.ComposeActivity"
+        <activity android:name="com.impostor.app.ComposeActivity"
             android:theme="@style/ComposeTheme"
             android:exported="true"
             tools:replace="android:exported">

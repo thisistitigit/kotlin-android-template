@@ -1,0 +1,39 @@
+package com.impostor.library.domain.usecase
+
+import com.impostor.library.data.local.entity.ContentEntity
+import com.impostor.library.data.repository.GameRepository
+import com.impostor.library.domain.enums.GameModeType
+import com.impostor.library.domain.enums.RoleType
+import com.impostor.library.domain.model.RoundSetup
+
+/** Creates and fully configures the next round in one application-level operation. */
+class StartConfiguredRoundUseCase(
+    private val repository: GameRepository,
+    private val assignRoles: AssignRolesUseCase
+) {
+    suspend operator fun invoke(
+        gameId: Int,
+        mode: GameModeType,
+        civilianContent: ContentEntity?,
+        impostorContent: ContentEntity?,
+        contentSetId: Int? = civilianContent?.contentSetId
+    ): Long {
+        repository.prepareDefaults()
+        val game = requireNotNull(repository.getGame(gameId)) { "Game not found." }
+        val modeId = requireNotNull(repository.getMode(mode)?.id)
+        val roundId = repository.startNextRound(gameId, modeId, contentSetId).toInt()
+        val setup = RoundSetup(
+            roundId = roundId,
+            players = game.players.map { it.gamePlayer },
+            impostorCount = game.game.impostorCount,
+            mrWhiteCount = game.game.mrWhiteCount,
+            civilianRole = requireNotNull(repository.getRole(RoleType.CIVILIAN)),
+            impostorRole = requireNotNull(repository.getRole(RoleType.IMPOSTOR)),
+            mrWhiteRole = repository.getRole(RoleType.MR_WHITE),
+            civilianContent = civilianContent,
+            impostorContent = impostorContent
+        )
+        repository.saveAssignments(roundId, assignRoles(setup))
+        return roundId.toLong()
+    }
+}

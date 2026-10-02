@@ -1,0 +1,29 @@
+package com.impostor.library.domain.usecase
+
+import com.impostor.library.data.repository.GameRepository
+import com.impostor.library.domain.enums.RoleType
+import com.impostor.library.domain.model.RoundResult
+
+class FinishRoundUseCase(
+    private val repository: GameRepository,
+    private val calculateScore: CalculateScoreUseCase
+) {
+    suspend operator fun invoke(roundId: Int, mrWhiteGuesserId: Int? = null): RoundResult {
+        val assignments = repository.getAssignments(roundId)
+        require(assignments.isNotEmpty()) { "The round has no role assignments." }
+        val votes = repository.getVotes(roundId).associate {
+            it.voterGamePlayerId to it.votedGamePlayerId
+        }
+        val roles = assignments.associate { it.gamePlayer.id to it.role.type }
+        val calculation = calculateScore(
+            roundId = roundId,
+            playerIds = roles.keys,
+            impostorIds = roles.filterValues { it == RoleType.IMPOSTOR }.keys,
+            mrWhiteIds = roles.filterValues { it == RoleType.MR_WHITE }.keys,
+            votes = votes,
+            mrWhiteGuesserId = mrWhiteGuesserId
+        )
+        repository.finishRound(roundId, calculation.events)
+        return calculation.result
+    }
+}

@@ -70,7 +70,7 @@ As regras puras ficam em casos de uso e têm testes unitários. Operações que 
 
 ## Paleta global
 
-As cores ficam apenas em `library-compose/src/main/java/com/ncorti/kotlin/template/app/ui/theme/Color.kt`:
+As cores ficam apenas em `library-compose/src/main/java/com/impostor/app/ui/theme/Color.kt`:
 
 | Token | Hex | Uso |
 | --- | --- | --- |

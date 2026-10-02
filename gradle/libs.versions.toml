@@ -20,6 +20,7 @@ paparazzi = "2.0.0-alpha02"
 room = "2.7.2"
 lucide_icons = "2.2.1"
 target_sdk_version = "36"
+ui = "1.12.1"
 
 [libraries]
 junit = { module = "junit:junit", version.ref = "junit" }
@@ -46,6 +47,7 @@ espresso_core = { module = "androidx.test.espresso:espresso-core", version.ref =
 agp = { module = "com.android.tools.build:gradle", version.ref = "agp" }
 kgp = { module = "org.jetbrains.kotlin:kotlin-gradle-plugin", version.ref = "kotlin" }
 lucide_icons = { module = "com.composables:icons-lucide-android", version.ref = "lucide_icons" }
+ui = { group = "androidx.compose.ui", name = "ui", version.ref = "ui" }
 
 [plugins]
 detekt = { id = "io.gitlab.arturbosch.detekt", version.ref = "detekt" }

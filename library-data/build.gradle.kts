@@ -18,7 +18,7 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
-    namespace = "com.ncorti.kotlin.template.library.data"
+    namespace = "com.impostor.library.data"
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17

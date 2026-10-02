@@ -3,7 +3,7 @@ import org.gradle.api.tasks.bundling.Jar
 
 /**
  * Precompiled script plugin from:
- * https://github.com/cortinico/kotlin-android-template/blob/master/buildSrc/src/main/kotlin/publish.gradle.kts
+ * https://github.com/cortinico/impostor/blob/master/buildSrc/src/main/kotlin/publish.gradle.kts
  *
  * The following plugin tasks care of setting up:
  * - Publishing to Maven Central and Sonatype Snapshots
@@ -39,7 +39,7 @@ publishing {
 
             pom {
                 description.set("A template for Kotlin Android projects")
-                url.set("https://github.com/cortinico/kotlin-android-template/")
+                url.set("https://github.com/cortinico/impostor/")
 
                 licenses {
                     license {
@@ -54,13 +54,13 @@ publishing {
                     }
                 }
                 scm {
-                    connection.set("scm:git:git://github.com/cortinico/kotlin-android-template.git")
-                    developerConnection.set("scm:git:ssh://github.com/cortinico/kotlin-android-template.git")
-                    url.set("https://github.com/cortinico/kotlin-android-template/")
+                    connection.set("scm:git:git://github.com/cortinico/impostor.git")
+                    developerConnection.set("scm:git:ssh://github.com/cortinico/impostor.git")
+                    url.set("https://github.com/cortinico/impostor/")
                 }
                 issueManagement {
                     system.set("GitHub Issues")
-                    url.set("https://github.com/cortinico/kotlin-android-template/issues")
+                    url.set("https://github.com/cortinico/impostor/issues")
                 }
             }
         }

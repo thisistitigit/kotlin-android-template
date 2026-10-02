@@ -12,6 +12,7 @@
     <string name="classic">Classic</string>
     <string name="questions">Questions</string>
     <string name="continue_label">Continue</string>
+    <string name="play_label">Play</string>
     <string name="back">Back</string>
     <string name="skip">Skip</string>
     <string name="how_many">How Many</string>
@@ -34,4 +35,14 @@
         <item quantity="one">Impostor</item>
         <item quantity="other">Impostors</item>
     </plurals>
+    <string name="your_word_is">Your Word Is</string>
+    <string name="your_question_is">Your Question Is</string>
+    <string name="youre_mr_white">You\'re Mr. White</string>
+    <string name="mr_white_explanation">You don\'t have a word. Try to blend in and guess it!</string>
+    <string name="remember_it">Remember it</string>
+    <string name="got_it">Got it!</string>
+    <string name="dont_show_word">Don\'t show your word to other players</string>
+    <string name="dont_show_question">Don\'t show your question to other players</string>
+    <string name="content_hidden">Content hidden</string>
+
 </resources>

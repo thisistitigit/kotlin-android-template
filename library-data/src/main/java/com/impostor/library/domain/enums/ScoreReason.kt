@@ -1,0 +1,15 @@
+package com.impostor.library.domain.enums
+
+enum class ScoreReason {
+    CORRECT_IMPOSTOR_VOTE,
+    CORRECT_MR_WHITE_VOTE,
+    WRONG_IMPOSTOR_VOTE,
+    IMPOSTOR_DISCOVERED,
+    IMPOSTOR_NOT_DISCOVERED,    
+    MR_WHITE_DISCOVERED,
+    MR_WHITE_NOT_DISCOVERED,
+    CIVILIAN_WIN,
+    IMPOSTOR_WIN,
+    MR_WHITE_WIN,
+    BONUS
+}
