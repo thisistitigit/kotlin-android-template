@@ -10,6 +10,7 @@ import com.impostor.library.data.local.entity.RoundAssignmentEntity
 import com.impostor.library.data.local.entity.RoundEntity
 import com.impostor.library.data.local.relation.RoundAssignmentDetails
 import com.impostor.library.domain.enums.RoleType
+import com.impostor.library.domain.enums.GameModeType
 import com.impostor.library.domain.enums.RoundStatus
 
 @Dao
@@ -35,6 +36,9 @@ interface RoundDao {
 
     @Query("SELECT * FROM rounds WHERE round_id = :roundId")
     suspend fun getRound(roundId: Int): RoundEntity?
+
+    @Query("SELECT gm.type FROM rounds r JOIN game_modes gm ON gm.game_mode_id = r.game_mode_id WHERE r.round_id = :roundId")
+    suspend fun getRoundMode(roundId: Int): GameModeType?
 
     @Transaction
     @Query("SELECT * FROM round_assignments WHERE round_id = :roundId")

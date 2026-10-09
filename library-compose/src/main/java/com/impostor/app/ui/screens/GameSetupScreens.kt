@@ -146,7 +146,8 @@ fun ImpostorCountScreen(
 data class TurnPlayerUi(
     val name: String,
     @DrawableRes val avatarRes: Int,
-    val photo: Bitmap? = null
+    val photo: Bitmap? = null,
+    val photoUri: String? = null
 )
 
 data class PlayerTurnUiState(

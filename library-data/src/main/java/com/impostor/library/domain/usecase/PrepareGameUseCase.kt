@@ -24,7 +24,9 @@ class PrepareGameUseCase(
         contentInput: RoundContentInput
     ): PreparedGame = gameRepository.transaction {
         require(mode == GameModeType.CLASSIC || whites == 0)
-        val content = contentRepository.saveCustomContent(mode, contentInput.normal, contentInput.adversary, contentInput.category)
+        val content = if (contentInput.normal.isBlank() && contentInput.adversary.isBlank())
+            contentRepository.selectBuiltInContent(mode, contentInput.category)
+        else contentRepository.saveCustomContent(mode, contentInput.normal, contentInput.adversary, contentInput.category)
         val ids = players.map { playerRepository.createPlayer(it.name, it.photoUri).toInt() }
         val gameId = createGame(ids, impostors, whites).toInt()
         val roundId = startConfiguredRound(gameId, mode, content.first, content.second).toInt()

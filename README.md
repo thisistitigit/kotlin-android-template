@@ -1,6 +1,6 @@
 # Impostor
 
-Aplicação Android local para jogos sociais, escrita em Kotlin, Room e Jetpack Compose. O fluxo visual implementado é `Splash → Onboarding → New Game → Players → Player names → Impostors → Content setup → Player turn → Content reveal → Everyone Ready → Voting → Results → Role reveal`; o backend guarda jogadores, sessões, rondas, papéis, conteúdo, votos e pontuação.
+Aplicação Android local para jogos sociais, escrita em Kotlin, Room e Jetpack Compose. O fluxo visual implementado é `Splash → Onboarding → New Game → Players → Player names → Impostors → Category (Questions) → Player turn → Content reveal → Everyone Ready → Answers (Questions) → Voting → Results → Role reveal`; o backend guarda jogadores, sessões, rondas, papéis, conteúdo, respostas, votos e pontuação.
 
 ## Executar e validar
 
@@ -28,7 +28,7 @@ Os testes instrumentados precisam de emulador ou dispositivo:
 
 ## Regras de jogo implementadas
 
-Um `Game` é uma sessão com jogadores, sem quantidade de rondas pré-definida. Quando os jogadores escolhem jogar novamente, `StartRoundUseCase`/`StartConfiguredRoundUseCase` calcula automaticamente `MAX(round_number) + 1`. A nova ronda pode usar `CLASSIC`, `SIMILAR_WORD` ou `QUESTION`; a classificação continua a acumular na mesma sessão, mesmo quando o modo muda.
+Um `Game` é uma sessão com jogadores, sem quantidade de rondas pré-definida. Quando os jogadores escolhem jogar novamente, `StartRoundUseCase`/`StartConfiguredRoundUseCase` calcula automaticamente `MAX(round_number) + 1`. A interface mantém o modo da ronda acabada de jogar e acumula a classificação na mesma sessão. Em Questions, é possível escolher outra categoria para a nova ronda.
 
 O Mr. White é opcional ao criar o jogo:
 
@@ -40,7 +40,7 @@ val gameId = backend.createGame(
 )
 ```
 
-Em Classic, cada Mr. White é escolhido entre jogadores que não são impostores e recebe sempre `contentId = null`, que representa a palavra vazia. O valor zero desativa este papel; outros modos não o atribuem. O cálculo legado de pontuação suporta `mrWhiteGuesserId`, mas o novo fluxo de votação sequencial termina por eliminação e não inclui um ecrã de adivinhação. A classificação é calculada a partir de `score_events`, a única fonte de verdade para pontos.
+Em Classic, cada Mr. White é escolhido entre jogadores que não são impostores e recebe sempre `contentId = null`, que representa a palavra vazia. O valor zero desativa este papel; outros modos não o atribuem. Quando é descoberto, tem uma tentativa privada de adivinhar a palavra. A classificação é calculada a partir de `score_events`, a única fonte de verdade para pontos.
 
 Inicializa o backend uma vez, idealmente num container de dependências da aplicação:
 
@@ -146,7 +146,7 @@ AppButton(
 
 `NumberSelector` é o sistema horizontal reutilizado nos ecrãs de jogadores, impostores e Mr. Whites. Recebe um `IntRange`, o valor selecionado e um callback; o pager aplica snapping e mantém o item central como seleção. `RoleSelector` mostra apenas Impostor em Questions e permite alternar entre Mr. White e Impostor em Classic.
 
-`PlayerAvatar` apresenta um avatar de resource ou a fotografia capturada. Os 27 avatares são baralhados sem repetição ao configurar jogadores. `PlayerNameRoute` contém `TakePicturePreview`, enquanto `PlayerNameScreen` é uma UI pura; assim a câmara funciona no dispositivo e os previews não dependem de uma Activity. `PlayerTurnScreen` reutiliza `PlayerAvatar`, `AppCard` e `AppButton`, recebe a lista de jogadores que já viram o conteúdo e escolhe um gato do array `TURN_CAT_IMAGES`.
+`PlayerAvatar` apresenta um avatar de resource ou a fotografia capturada. Os 27 avatares são baralhados sem repetição ao configurar jogadores. `PlayerNameRoute` usa `TakePicture` e `FileProvider` para guardar a foto em `filesDir/player-photos`; `PlayerNameScreen` é uma UI pura. `PlayerTurnScreen` reutiliza `PlayerAvatar`, `AppCard` e `AppButton`, recebe a lista de jogadores que já viram o conteúdo e escolhe um gato do array `TURN_CAT_IMAGES`.
 
 O guia para implementar palavra, pergunta e Mr. White está em [docs/NEXT_GAME_SCREENS.md](docs/NEXT_GAME_SCREENS.md), junto das referências em `docs/mockups/`.
 
@@ -172,15 +172,15 @@ Ao criar um componente novo:
 
 ## Decisões e próximos pontos de integração
 
-O botão `Continue` no New Game só fica ativo após escolher um modo. Players permite escolher entre 3 e 10 jogadores; o ecrã seguinte limita adversários para preservar pelo menos um civil. Classic permite quantidades independentes de Impostor e Mr. White, enquanto Questions fixa o seletor em Impostor e mantém `mrWhiteCount = 0`. O onboarding ainda é mostrado em cada arranque; guarda a conclusão em DataStore quando quiseres mostrá-lo apenas na primeira utilização.
+O botão `Continue` no New Game só fica ativo após escolher um modo. Players permite escolher entre 3 e 10 jogadores; o ecrã seguinte limita adversários para preservar pelo menos um civil. Classic permite quantidades independentes de Impostor e Mr. White, enquanto Questions fixa o seletor em Impostor e mantém `mrWhiteCount = 0`. O onboarding aparece apenas na primeira utilização; a conclusão fica em preferências locais.
 
-O schema Room é exportado para `library-data/schemas`. A base está na versão 2, com migração v1→v2 testada que conserva os votos anteriores. Qualquer alteração futura ao schema deve incrementar a versão e incluir uma migration testada.
+O schema Room é exportado para `library-data/schemas`. A base está na versão 3, com migrações v1→v2→v3 testadas que conservam votos e histórico. Qualquer alteração futura ao schema deve incrementar a versão e incluir uma migration testada.
 
 O [README original do template](README.upstream.md) continua disponível para referência.
 
 ## Votação
 
-O percurso integrado é preparação de conteúdo real → passagem/revelação individual → Everyone Ready →
+O percurso integrado é seleção automática de conteúdo do catálogo → passagem/revelação individual → Everyone Ready →
 Vote → seleção → Vote Locked → resultados → revelação do papel. `GameFlowViewModel` mantém o estado
 durante mudanças de configuração; os composables de votação recebem apenas estado e callbacks.
 
@@ -201,6 +201,7 @@ transacionalmente contra as atribuições da ronda, sem usar posições da UI co
 O índice único `(phase_id, voter_game_player_id)` impede votos duplicados.
 O esquema Room v2 inclui migração v1→v2 que conserva os votos antigos.
 
+Em Classic, antes de cada votação o grupo escolhe se procura um Impostor ou um Mr. White entre os papéis ainda ativos. Questions procura sempre um Impostor. A escolha fica guardada na fase de votação; num empate, a repetição mantém o mesmo alvo.
 Todos os jogadores ativos votam pela ordem dos lugares, sem votar em si próprios. A confirmação bloqueia
 o voto e exige passagem do telemóvel; só depois do último Got it aparecem resultados. Empates criam
 outra fase com o mesmo eleitorado e apenas os candidatos empatados; empates repetidos continuam sem
@@ -208,14 +209,11 @@ eliminação automática. O Back em Vote Locked confirma a passagem, nunca reabr
 O Back na seleção regressa à introdução e descarta a seleção ainda não submetida.
 
 Apenas Reveal Role elimina o candidato mais votado. Eliminados deixam de votar e de ser candidatos.
-Procuram-se os Impostors primeiro, depois os Mr. Whites restantes; Questions não admite Mr. White.
-A ronda termina quando todos os adversários foram eliminados ou não restam civis ativos. As fases
-resolvidas atribuem 2 pontos por voto correto e 3 pontos aos vencedores da ronda; os votos de fases
-empatadas ficam no histórico e não atribuem pontos. A revelação, eliminação e pontuação final são atómicas.
-Este fluxo de votação não acrescenta uma tentativa de adivinhação da palavra por Mr. White.
+Se o papel revelado não corresponder ao papel escolhido, a ronda termina imediatamente: os Impostors ativos ganham quando o alvo escolhido era Impostor; os Mr. Whites ativos ganham quando o alvo escolhido era Mr. White. Se corresponder, a votação continua para os adversários restantes. Um Mr. White corretamente descoberto tenta adivinhar a palavra uma vez: se acertar, vence individualmente; se falhar, fica eliminado e não recebe pontos de vitória posteriores.
+A ronda também termina quando todos os adversários foram eliminados ou não restam civis ativos. Cada voto num jogador do papel escolhido atribui 2 pontos; os vencedores ativos recebem 3 pontos e um Mr. White que adivinha a palavra recebe 7 pontos pela vitória individual. Os votos de fases empatadas ficam no histórico e não atribuem pontos. Revelação, eliminação e pontuação final são transacionais.
 
 Para reutilizar a UI, usar `PlayerChip` para identificação, `PrivacyCard(text)` para avisos privados,
-`VoteCandidateCard` para seleção e `VoterAvatars` para listas acessíveis sem cortes. `VotingFrame` centraliza
+`VoteCandidateCard` para seleção e `VoterAvatars` para listas acessíveis sem cortes. `GameScreenLayout` centraliza
 header, insets, largura máxima e scroll quando necessário. Novas mensagens pertencem a `strings.xml`;
 novas cores e estilos pertencem a `Color.kt` e `Typography.kt`. Os previews de votação são independentes
 de Activity, ViewModel e Room e incluem 320×480, oito candidatos e empate.
@@ -248,15 +246,17 @@ ou pontuar enquanto a tentativa estiver pendente. Acertar termina a ronda com vi
 individual de Mr. White; falhar permite continuar se ainda existirem Civilians e adversários.
 Só após o fim da ronda é revelado o conteúdo público.
 
-`New Game` prepara outra ronda da mesma sessão e mantém a classificação, podendo mudar
-entre Classic e Questions na preparação. Questions nunca atribui Mr. White. A pontuação
+`New Game` inicia outra ronda do mesmo modo na mesma sessão e mantém a classificação.
+Classic escolhe novo conteúdo e inicia a ronda diretamente; Questions pede a categoria e inicia a ronda ao tocar em Continue.
+Questions nunca atribui Mr. White. A pontuação
 apresentada vem do domínio: +2 por voto correto, +3 por vitória e +7 pela vitória individual
-de Mr. White. `View Scores` apresenta o total acumulado da sessão.
+de Mr. White. `View Scores` apresenta o total acumulado da sessão. `Finish Game` encerra
+explicitamente a sessão, regressa ao Home e retira a opção de a continuar.
 
 
 ### Layout comum e seleção de categorias
 
-Todos os ecrãs do jogo após Home usam `GameScreenLayout`: header comum, área de conteúdo
+Os ecrãs de configuração, turno e votação usam `GameScreenLayout`: header comum, área de conteúdo
 adaptativa e ação principal centrada, com margem inferior de `Spacing.extraLarge` (32dp)
 a partir da zona segura do dispositivo. O teclado é tratado com `imePadding` nos ecrãs
 com input. O botão não se desloca quando o conteúdo cresce; apenas o conteúdo faz scroll.
@@ -278,17 +278,26 @@ Para uma grelha/pager que já faz scroll, usar `scrollContent = false` e `Modifi
 na área central. Para conteúdo longo, manter o scroll do layout. Usar a mesma margem inferior
 em todos os ecrãs; estilos diferentes não devem alterar o posicionamento da ação principal.
 
-Questions apresenta `CategoryScreen` antes da preparação do conteúdo, também em novas rondas
+Questions apresenta `CategoryScreen` antes do turno do primeiro jogador, também em novas rondas
 na mesma sessão. O carrossel suporta gestos e toque, destaca o cartão central e reutiliza
 `PageIndicator` com onboarding. A categoria escolhida é guardada como chave estável no campo
-`category` de `ContentSetEntity`; Classic continua sem categoria. O ZIP só contém ilustrações:
-a preparação das perguntas existentes é mantida, sem inventar um banco de perguntas.
+`category` de `ContentSetEntity`; Classic continua sem categoria. Ao tocar em Continue, a app escolhe
+automaticamente um par de perguntas da categoria, sem repetições na mesma sessão até esgotar o catálogo.
+Classic escolhe automaticamente um dos pares de palavras disponíveis. Não existe ecrã de introdução manual de conteúdo.
+
+O catálogo está em `library-data/src/main/java/com/impostor/library/domain/model/BuiltInContent.kt`:
+10 pares Classic, cinco NBA, cinco NFL e dois em cada uma das outras categorias. As perguntas NBA
+foram adaptadas dos temas de [Guess The NBA Imposter](https://youtu.be/9whpt_KbRRQ); o primeiro
+par NFL foi adaptado do tema apresentado em [Guess The NFL Imposter](https://youtu.be/2fb5ILuUpLg)
+e os restantes pares NFL são originais. Em Questions, cada jogador responde em privado; o grupo
+vê as respostas em conjunto antes de iniciar a votação.
 
 | Categoria | SVG original importado do ZIP |
 | --- | --- |
 | Atores | `library-compose/src/main/res/raw/category_actors.svg` |
 | Filmes | `library-compose/src/main/res/raw/category_movies.svg` |
 | NBA | `library-compose/src/main/res/raw/category_nba.svg` |
+| NFL | cartão de texto reutilizável; ainda não foi fornecido um SVG NFL |
 | Futebol | `library-compose/src/main/res/raw/category_football.svg` |
 | Séries | `library-compose/src/main/res/raw/category_series.svg` |
 | Cantores | `library-compose/src/main/res/raw/category_singers.svg` |
@@ -299,3 +308,22 @@ em `res/raw` e desenhados com `rememberSvgPainter`/`CategoryCard`, sem conversã
 bibliotecas adicionais. O adaptador suporta o formato destes assets: viewBox com origem 0,0,
 paths, fill-rule, fill, stroke, stroke-width e stroke-linejoin. Novos SVGs com grupos,
 transforms, gradientes, texto ou filtros precisam de normalização antes de serem usados.
+
+## Continuar partidas e preparar uma release
+
+O botão **Continue Last Game** no Home recupera a última sessão. `GameSessionStore` guarda
+apenas participantes, avatares, caminhos das fotografias e posição do fluxo; os papéis,
+segredos, respostas, votos e pontos são recuperados do Room. Quando a app é reaberta após
+ser encerrada, a revelação privada regressa ao ecrã de passagem do telemóvel e um voto
+submetido continua bloqueado. O onboarding só reaparece depois de limpar os dados da app.
+
+As fotografias são capturadas em resolução completa por `TakePicture` e `FileProvider`,
+guardadas em `filesDir/player-photos/` e representadas na base de dados por URI.
+
+O workflow `pre-merge.yaml` compila a app e os testes do backend com JDK 21 e SDK 36.
+`publish-snapshot.yaml` gera um APK debug manualmente. Para gerar o bundle de release
+assinado no workflow `publish-release.yaml`, configura os segredos GitHub
+`IMPOSTOR_KEYSTORE_BASE64`, `IMPOSTOR_STORE_PASSWORD`, `IMPOSTOR_KEY_ALIAS` e
+`IMPOSTOR_KEY_PASSWORD`. O workflow produz um AAB como artefacto; a publicação na loja,
+os exports finais de marca e os assets PNG ainda dependem dos ficheiros e da conta de
+publicação do proprietário.

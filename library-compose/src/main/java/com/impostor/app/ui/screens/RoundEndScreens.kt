@@ -4,14 +4,15 @@ package com.impostor.app.ui.screens
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.BoxWithConstraints
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.material.MaterialTheme
 import androidx.compose.material.OutlinedTextField
 import androidx.compose.material.Text
 import androidx.compose.material.TextButton
@@ -23,10 +24,10 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import com.impostor.app.ui.components.GameScreenLayout
 import com.impostor.app.ui.components.GameActionButton
-import com.impostor.app.ui.components.SecretContentCard
+import com.impostor.app.ui.components.GameScreenLayout
 import com.impostor.app.ui.components.PlayerAvatar
+import com.impostor.app.ui.components.SecretContentCard
 import com.impostor.app.ui.components.TitleBanner
 import com.impostor.app.ui.theme.AppBackground
 import com.impostor.app.ui.theme.AppTextStyles
@@ -42,13 +43,15 @@ import com.impostor.library.domain.enums.RoleType
 
 data class MrWhiteGuessUiState(val player: PlayerUi, val text: String, val busy: Boolean = false)
 data class PlayerScoreUi(val player: PlayerUi, val points: Int)
-data class RoundSummaryUiState(val winningRoles: Set<RoleType>, val scores: List<PlayerScoreUi>)
+data class RoundSummaryUiState(val winningRoles: Set<RoleType>, val scores: List<PlayerScoreUi>,
+    val incorrectTargetWinner: RoleType? = null, val mrWhiteGuessed: Boolean = false)
 
 /** Role variants share one layout and never read undisclosed assignments. */
 @Composable
 fun RoleRevealScreen(state: VoteRoleRevealUiState, onBack: () -> Unit, onContinue: () -> Unit,
     modifier: Modifier = Modifier) {
     val civilian = state.role == RoleType.CIVILIAN
+    val missed = state.role != state.target
     val background = if (state.role == RoleType.IMPOSTOR) DeepPurple else AppBackground
     GameScreenLayout(onBack, modifier, background, contentArrangement = Arrangement.spacedBy(Spacing.medium), bottomAction = {
         GameActionButton(stringResource(R.string.continue_label), onClick = onContinue)
@@ -57,8 +60,12 @@ fun RoleRevealScreen(state: VoteRoleRevealUiState, onBack: () -> Unit, onContinu
             Column(modifier = Modifier.padding(horizontal = Spacing.medium, vertical = Spacing.large),
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.spacedBy(Spacing.medium)) {
-                Text(stringResource(if (civilian) R.string.role_not_impostor else R.string.role_caught),
-                    style = if (civilian) AppTextStyles.labelsScroll else AppTextStyles.title,
+                Text(stringResource(when {
+                    !missed -> R.string.role_caught
+                    state.target == RoleType.MR_WHITE -> R.string.role_not_mr_white
+                    else -> R.string.role_not_impostor
+                }),
+                    style = if (missed) AppTextStyles.labelsScroll else AppTextStyles.title,
                     textAlign = TextAlign.Center, color = if (civilian) AppBackground else MainPurple)
                 VotingAsset(when (state.role) {
                     RoleType.CIVILIAN -> "civilian_reveal_cat"
@@ -143,7 +150,10 @@ fun RoundSummaryScreen(state: RoundSummaryUiState, onBack: () -> Unit, onNewGame
     val white = state.winningRoles == setOf(RoleType.MR_WHITE)
     val civilian = RoleType.CIVILIAN in state.winningRoles
     GameScreenLayout(onBack, modifier, secondaryAction = {
-        TextButton(onClick = onScores) { Text(stringResource(R.string.view_scores), color = MarkerYellow) }
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            TextButton(onClick = onScores) { Text(stringResource(R.string.view_scores), color = MarkerYellow) }
+            TextButton(onClick = onBack) { Text(stringResource(R.string.finish_game), color = AppWhite) }
+        }
     }, contentArrangement = Arrangement.spacedBy(Spacing.medium), bottomAction = { GameActionButton(stringResource(R.string.new_game), onClick = onNewGame) }) {
         VotingTitle(stringResource(R.string.game_over_title), LightPurple)
         Text(stringResource(when {
@@ -153,10 +163,13 @@ fun RoundSummaryScreen(state: RoundSummaryUiState, onBack: () -> Unit, onNewGame
         }), style = AppTextStyles.labelsScroll, color = MarkerYellow, textAlign = TextAlign.Center)
         VotingAsset("win")
         Text(stringResource(when {
-            white -> R.string.white_win_reason
+            state.incorrectTargetWinner == RoleType.MR_WHITE -> R.string.wrong_white_vote_reason
+            state.incorrectTargetWinner == RoleType.IMPOSTOR -> R.string.wrong_impostor_vote_reason
+            white && state.mrWhiteGuessed -> R.string.white_win_reason
+            white -> R.string.white_survived_reason
             civilian -> R.string.civilians_win_reason
             else -> R.string.impostors_win_reason
-        }), color = AppWhite, textAlign = TextAlign.Center)
+        }), style = MaterialTheme.typography.caption, color = AppWhite, textAlign = TextAlign.Center)
         ScoreRows(state.scores, false)
     }
 }

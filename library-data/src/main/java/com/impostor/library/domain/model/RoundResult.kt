@@ -9,5 +9,6 @@ data class RoundResult(
     val mrWhiteIds: Set<Int>,
     val mrWhiteWinnerId: Int?,
     val winningRoles: Set<RoleType>,
-    val scores: Map<Int, Int>
+    val scores: Map<Int, Int>,
+    val incorrectTargetWinner: RoleType? = null
 )

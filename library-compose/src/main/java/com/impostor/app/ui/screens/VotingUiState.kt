@@ -3,8 +3,9 @@ package com.impostor.app.ui.screens
 import com.impostor.library.domain.enums.RoleType
 
 data class PlayerUi(val id: Int, val number: Int, val avatar: TurnPlayerUi)
-data class VoteRoleRevealUiState(val player: PlayerUi, val role: RoleType, val roundFinished: Boolean)
-enum class VotingDestination { VOTE_INTRO, SELECT_CANDIDATE, VOTE_LOCKED, VOTE_RESULTS, REVEAL_ROLE }
+data class VoteRoleRevealUiState(val player: PlayerUi, val role: RoleType, val roundFinished: Boolean,
+    val target: RoleType = RoleType.IMPOSTOR)
+enum class VotingDestination { SELECT_ROLE, VOTE_INTRO, SELECT_CANDIDATE, VOTE_LOCKED, VOTE_RESULTS, REVEAL_ROLE }
 
 data class VoteResultUiState(
     val selectedPlayer: PlayerUi?,
@@ -25,6 +26,7 @@ data class VotingUiState(
     val candidates: List<PlayerUi> = emptyList(),
     val selectedId: Int? = null,
     val target: RoleType = RoleType.IMPOSTOR,
+    val availableTargets: List<RoleType> = emptyList(),
     val result: VoteResultUiState? = null,
     val revealedRole: RoleType? = null,
     val roundFinished: Boolean = false,
@@ -33,6 +35,7 @@ data class VotingUiState(
 )
 
 sealed interface VotingEvent {
+    data class SelectRole(val role: RoleType) : VotingEvent
     data object OpenSelection : VotingEvent
     data object Back : VotingEvent
     data class ToggleSelection(val playerId: Int) : VotingEvent

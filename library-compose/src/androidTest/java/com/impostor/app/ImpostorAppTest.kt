@@ -4,6 +4,7 @@ import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.test.platform.app.InstrumentationRegistry
 import com.impostor.app.ui.ImpostorApp
 import com.impostor.app.ui.theme.ImpostorTheme
 import org.junit.Rule
@@ -15,6 +16,9 @@ class ImpostorAppTest {
 
     @Test
     fun skipOnboardingOpensNewGameAndAllowsModeSelection() {
+        InstrumentationRegistry.getInstrumentation().targetContext
+            .getSharedPreferences("impostor-preferences", android.content.Context.MODE_PRIVATE)
+            .edit().clear().commit()
         composeTestRule.mainClock.autoAdvance = false
         composeTestRule.setContent { ImpostorTheme { ImpostorApp() } }
         composeTestRule.mainClock.advanceTimeBy(SPLASH_AND_WELCOME_MILLIS)
@@ -25,8 +29,7 @@ class ImpostorAppTest {
         composeTestRule.onNodeWithText("Continue").performClick()
         composeTestRule.onNodeWithText("Players?").assertIsDisplayed()
         composeTestRule.onNodeWithText("Continue").performClick()
-        composeTestRule.onNodeWithText("Impostors?").assertIsDisplayed()
-        composeTestRule.onNodeWithText("Mr. White").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Nickname").assertIsDisplayed()
     }
 
     private companion object {

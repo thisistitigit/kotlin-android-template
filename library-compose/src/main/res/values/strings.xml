@@ -9,6 +9,8 @@
     <string name="next">Next</string>
     <string name="get_started">Get Started</string>
     <string name="new_game">New Game</string>
+    <string name="resume_game">Continue Last Game</string>
+    <string name="finish_game">Finish Game</string>
     <string name="classic">Classic</string>
     <string name="questions">Questions</string>
     <string name="continue_label">Continue</string>
@@ -71,10 +73,6 @@
     <string name="finish_round">Finish Round</string>
     <string name="next_vote">Next Vote</string>
     <string name="asset_placeholder">Placeholder: %1$s</string>
-    <string name="prepare_content">Prepare the round</string>
-    <string name="prepare_content_description">The organiser supplies the real words or questions before passing the phone.</string>
-    <string name="civilian_content">Civilian word / question</string>
-    <string name="adversary_content">Impostor word / question</string>
     <string name="see_content">See Content</string>
     <string name="voting_error">Unable to complete this action</string>
     <string name="voting_error_detail">Your submitted votes are preserved. Try again.</string>
@@ -82,6 +80,7 @@
     <string name="good_luck">Good Luck!</string>
     <string name="role_caught">CAUGHT</string>
     <string name="role_not_impostor">NOT\nTHE IMPOSTOR</string>
+    <string name="role_not_mr_white">NOT\nMR. WHITE</string>
     <string name="role_was_civilian">WAS A CIVILIAN</string>
     <string name="role_was_impostor">WAS THE IMPOSTOR</string>
     <string name="role_is_white">IS MR. WHITE</string>
@@ -99,6 +98,13 @@
     <string name="civilians_win_reason">The adversaries were discovered</string>
     <string name="impostors_win_reason">The civilians were eliminated</string>
     <string name="white_win_reason">Mr. White guessed the word</string>
+    <string name="white_survived_reason">Mr. White remained undiscovered</string>
+    <string name="wrong_white_vote_reason">The group voted for Mr. White but chose the wrong player</string>
+    <string name="wrong_impostor_vote_reason">The group voted for an Impostor but chose the wrong player</string>
+    <string name="choose_vote_role">Who are you voting for?</string>
+    <string name="choose_vote_role_hint">Choose the role to find before voting for a player.</string>
+    <string name="vote_for_impostor">Impostor</string>
+    <string name="vote_for_mr_white">Mr. White</string>
     <string name="view_scores">View Scores</string>
     <string name="scores_title">Scores</string>
     <string name="round_points">+%1$d</string>
@@ -108,8 +114,15 @@
     <string name="category_actors">Actors</string>
     <string name="category_movies">Movies</string>
     <string name="category_nba">NBA</string>
+    <string name="category_nfl">NFL</string>
     <string name="category_football">Football</string>
     <string name="category_series">Series</string>
     <string name="category_singers">Singers</string>
-    <string name="selected_category_label">Category: %1$s</string>
+    <string name="answer_now">Answer</string>
+    <string name="answer_your_turn">Your Turn To Answer</string>
+    <string name="answers_progress">%1$d answers submitted</string>
+    <string name="your_answer">Your answer</string>
+    <string name="dont_show_answer">Don\'t show your answer to other players</string>
+    <string name="answers_are_in">ANSWERS ARE IN</string>
+    <string name="discuss_answers">Read the answers together, discuss, then vote.</string>
 </resources>

@@ -33,6 +33,7 @@ fun HomeScreen(
     selectedMode: GameModeType?,
     onModeSelected: (GameModeType) -> Unit,
      onContinue: () -> Unit,
+    onResume: (() -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
     BoxWithConstraints(
@@ -107,6 +108,13 @@ fun HomeScreen(
                 enabled = selectedMode != null
             )
 
+            onResume?.let { resume ->
+                Spacer(Modifier.height(Spacing.small))
+                AppButton(text = stringResource(R.string.resume_game), onClick = resume,
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = Spacing.large),
+                    style = AppButtonStyle.SECONDARY)
+            }
+
             Spacer(Modifier.height(bottomSpacing))
         }
     }
@@ -120,4 +128,10 @@ private val VERY_COMPACT_HOME_HEIGHT = 620.dp
 @Composable
 internal fun HomePreview() = ImpostorTheme {
     HomeScreen(GameModeType.CLASSIC, {}, {})
+}
+
+@Preview(showBackground = true)
+@Composable
+internal fun HomeResumePreview() = ImpostorTheme {
+    HomeScreen(GameModeType.QUESTION, {}, {}, onResume = {})
 }

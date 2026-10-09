@@ -46,6 +46,7 @@ class ComposePreviewer {
         if (shouldRender("HomePreview")) {
             paparazzi.snapshot(name = "HomePreview") { HomePreview() }
         }
+        if (shouldRender("HomeResumePreview")) paparazzi.snapshot(name = "HomeResumePreview") { HomeResumePreview() }
         if (shouldRender("PlayerCountPreview")) {
             paparazzi.snapshot(name = "PlayerCountPreview") { PlayerCountPreview() }
         }
@@ -65,6 +66,9 @@ class ComposePreviewer {
             paparazzi.snapshot(name = "MrWhiteRevealPreview") { MrWhiteRevealPreview() }
         }
         if (shouldRender("VoteIntroPreview")) paparazzi.snapshot(name = "VoteIntroPreview") { VoteIntroPreview() }
+        if (shouldRender("VoteRoleSelectionPreview")) paparazzi.snapshot(name = "VoteRoleSelectionPreview") {
+            VoteRoleSelectionPreview()
+        }
         if (shouldRender("VoteSmallPreview")) paparazzi.snapshot(name = "VoteSmallPreview") {
             Box(Modifier.requiredSize(320.dp, 480.dp)) { VoteSmallPreview() }
         }
@@ -93,5 +97,8 @@ class ComposePreviewer {
         if (shouldRender("CategoryMoviesPreview")) paparazzi.snapshot(name = "CategoryMoviesPreview") { CategoryMoviesPreview() }
         if (shouldRender("CategoryFootballPreview")) paparazzi.snapshot(name = "CategoryFootballPreview") { CategoryFootballPreview() }
         if (shouldRender("CategorySingersPreview")) paparazzi.snapshot(name = "CategorySingersPreview") { CategorySingersPreview() }
+        if (shouldRender("CategoryNflPreview")) paparazzi.snapshot(name = "CategoryNflPreview") { CategoryNflPreview() }
+        if (shouldRender("AnswerInputPreview")) paparazzi.snapshot(name = "AnswerInputPreview") { AnswerInputPreview() }
+        if (shouldRender("AnswerResultsPreview")) paparazzi.snapshot(name = "AnswerResultsPreview") { AnswerResultsPreview() }
     }
 }

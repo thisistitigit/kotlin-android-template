@@ -5,9 +5,15 @@ package com.impostor.app.ui.screens
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.tooling.preview.Preview
 import com.impostor.app.ui.theme.ImpostorTheme
+import com.impostor.library.domain.enums.RoleType
 
 private fun previewPlayers() = List(8) {
     PlayerUi(it + 1, it + 1, TurnPlayerUi("Player ${it + 1}", PLAYER_AVATARS[it]))
+}
+
+@Preview @Composable
+internal fun VoteRoleSelectionPreview() = ImpostorTheme {
+    VoteRoleSelectionScreen(listOf(RoleType.IMPOSTOR, RoleType.MR_WHITE), {})
 }
 
 @Preview @Composable

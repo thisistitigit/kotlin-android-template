@@ -24,6 +24,7 @@ class GameRepository(private val database: AppDatabase) {
     private val voting = VotingStore(database)
 
     suspend fun beginVoting(roundId: Int) = voting.begin(roundId)
+    suspend fun selectVotingTarget(roundId: Int, target: RoleType) = voting.selectTarget(roundId, target)
     suspend fun votingSnapshot(roundId: Int) = voting.snapshot(roundId)
     suspend fun acknowledgeVote(roundId: Int) = voting.acknowledge(roundId)
     suspend fun revealVotedRole(roundId: Int) = voting.reveal(roundId)
@@ -76,6 +77,10 @@ class GameRepository(private val database: AppDatabase) {
 
     suspend fun getGame(gameId: Int): GameWithPlayers? = gameDao.getGameWithPlayers(gameId)
 
+    suspend fun getRound(roundId: Int): RoundEntity? = roundDao.getRound(roundId)
+
+    suspend fun getRoundMode(roundId: Int): GameModeType? = roundDao.getRoundMode(roundId)
+
     suspend fun getMode(type: GameModeType): GameModeEntity? = gameDao.getMode(type)
 
     suspend fun getRole(type: RoleType): RoleEntity? = roundDao.getRole(type)
@@ -122,13 +127,16 @@ class GameRepository(private val database: AppDatabase) {
 
     suspend fun getVotes(roundId: Int): List<VoteEntity> = voteDao.getVotes(roundId)
 
+    suspend fun getAnswers(roundId: Int): List<AnswerEntity> = answerDao.getAnswers(roundId)
+
     suspend fun submitVote(vote: VoteEntity) = database.withTransaction {
         voting.submit(vote)
     }
 
     suspend fun submitAnswer(answer: AnswerEntity) = database.withTransaction {
         require(roundDao.isPlayerInRound(answer.roundId, answer.gamePlayerId)) { "Invalid player." }
-        require(answer.answerText.isNotBlank()) { "The answer cannot be blank." }
+        require(roundDao.getRound(answer.roundId)?.status == RoundStatus.REVEALING_ROLES)
+        require(answer.answerText.isNotBlank() && answer.answerText.length <= 80)
         answerDao.insert(answer.copy(answerText = answer.answerText.trim()))
     }
 

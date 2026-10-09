@@ -10,6 +10,7 @@ import com.impostor.library.data.repository.PlayerRepository
 import com.impostor.library.domain.enums.GameModeType
 import com.impostor.library.domain.enums.RoleType
 import com.impostor.library.domain.model.VotingPhaseStatus
+import com.impostor.library.domain.model.VotingSnapshot
 import kotlinx.coroutines.runBlocking
 import org.junit.After
 import org.junit.Assert.*
@@ -39,9 +40,96 @@ class VotingPersistenceTest {
         return StartConfiguredRoundUseCase(repository, AssignRolesUseCase { it })(game, GameModeType.CLASSIC, null, null).toInt()
     }
 
+    private suspend fun beginVote(roundId: Int, target: RoleType = RoleType.IMPOSTOR): VotingSnapshot {
+        val phase = repository.beginVoting(roundId)
+        return if (phase.status == VotingPhaseStatus.TARGET_SELECTION)
+            repository.selectVotingTarget(roundId, target) else phase
+    }
+
+    private suspend fun nextVote(roundId: Int, target: RoleType = RoleType.IMPOSTOR): VotingSnapshot {
+        val phase = repository.continueVoting(roundId)
+        return if (phase.status == VotingPhaseStatus.TARGET_SELECTION)
+            repository.selectVotingTarget(roundId, target) else phase
+    }
+
+    @Test fun classicRequiresRoleChoiceBeforeAnyPlayerVotes() = runBlocking {
+        val round = round(4, impostors = 1, whites = 1)
+        val phase = repository.beginVoting(round)
+        assertEquals(VotingPhaseStatus.TARGET_SELECTION, phase.status)
+        assertEquals(listOf(RoleType.IMPOSTOR, RoleType.MR_WHITE), phase.availableTargets)
+        assertTrue(runCatching {
+            SubmitVoteUseCase(repository)(round, phase.phaseId, phase.voterIds[0], phase.voterIds[1])
+        }.isFailure)
+        assertEquals(VotingPhaseStatus.OPEN,
+            repository.selectVotingTarget(round, RoleType.MR_WHITE).status)
+    }
+
+    @Test fun wrongImpostorTargetImmediatelyAwardsOnlyImpostors() = runBlocking {
+        val round = round(5, impostors = 2)
+        val assignments = repository.getAssignments(round)
+        val civilian = assignments.first { it.role.type == RoleType.CIVILIAN }.gamePlayer.id
+        val impostors = assignments.filter { it.role.type == RoleType.IMPOSTOR }.map { it.gamePlayer.id }
+        beginVote(round)
+        eliminate(round, civilian)
+        val result = requireNotNull(repository.getVotingResult(round))
+        assertEquals(setOf(RoleType.IMPOSTOR), result.winningRoles)
+        assertEquals(RoleType.IMPOSTOR, result.incorrectTargetWinner)
+        assertTrue(repository.votingSnapshot(round).roundFinished)
+        assertEquals(impostors.toSet(), db.scoreDao().getRoundScores(round)
+            .filter { it.reason == com.impostor.library.domain.enums.ScoreReason.IMPOSTOR_WIN }
+            .map { it.gamePlayerId }.toSet())
+    }
+
+    @Test fun wrongMrWhiteTargetAwardsActiveWhitesThreePointsEach() = runBlocking {
+        val round = whiteRound(whites = 2)
+        val assignments = repository.getAssignments(round)
+        val civilian = assignments.first { it.role.type == RoleType.CIVILIAN }.gamePlayer.id
+        val whites = assignments.filter { it.role.type == RoleType.MR_WHITE }.map { it.gamePlayer.id }
+        beginVote(round, RoleType.MR_WHITE)
+        eliminate(round, civilian)
+        val result = requireNotNull(repository.getVotingResult(round))
+        assertEquals(setOf(RoleType.MR_WHITE), result.winningRoles)
+        assertEquals(RoleType.MR_WHITE, result.incorrectTargetWinner)
+        assertEquals(VotingPhaseStatus.REVEALED, repository.votingSnapshot(round).status)
+        val bonuses = db.scoreDao().getRoundScores(round)
+            .filter { it.reason == com.impostor.library.domain.enums.ScoreReason.MR_WHITE_WIN }
+        assertEquals(whites.toSet(), bonuses.map { it.gamePlayerId }.toSet())
+        assertTrue(bonuses.all { it.points == 3 })
+    }
+
+    @Test fun wrongImpostorVoteForMrWhiteGivesNoWordGuess() = runBlocking {
+        val round = whiteRound()
+        val assignments = repository.getAssignments(round)
+        val white = assignments.single { it.role.type == RoleType.MR_WHITE }.gamePlayer.id
+        beginVote(round, RoleType.IMPOSTOR)
+        eliminate(round, white)
+        val result = requireNotNull(repository.getVotingResult(round))
+        assertEquals(setOf(RoleType.IMPOSTOR), result.winningRoles)
+        assertFalse(db.scoreDao().getRoundScores(round).any {
+            it.gamePlayerId == white && it.reason == com.impostor.library.domain.enums.ScoreReason.MR_WHITE_WIN
+        })
+        assertEquals(VotingPhaseStatus.REVEALED, repository.votingSnapshot(round).status)
+    }
+
+    @Test fun eliminatedMrWhiteCannotWinAResponseFailureLater() = runBlocking {
+        val round = whiteRound(whites = 2)
+        val assignments = repository.getAssignments(round)
+        val whites = assignments.filter { it.role.type == RoleType.MR_WHITE }.map { it.gamePlayer.id }
+        val civilian = assignments.first { it.role.type == RoleType.CIVILIAN }.gamePlayer.id
+        beginVote(round, RoleType.MR_WHITE)
+        eliminate(round, whites.first())
+        repository.submitMrWhiteGuess(round, whites.first(), "not the word")
+        nextVote(round, RoleType.MR_WHITE)
+        eliminate(round, civilian)
+        val winners = db.scoreDao().getRoundScores(round)
+            .filter { it.reason == com.impostor.library.domain.enums.ScoreReason.MR_WHITE_WIN }
+        assertEquals(listOf(whites.last()), winners.map { it.gamePlayerId })
+        assertEquals(3, winners.single().points)
+    }
+
     @Test fun votesAreLockedAndIndependentAcrossSequentialPhases() = runBlocking {
         val round = round(5, 2, 1)
-        val first = repository.beginVoting(round)
+        val first = beginVote(round)
         val target = first.voterIds.first()
         for (voter in first.voterIds) {
             SubmitVoteUseCase(repository)(round, first.phaseId, voter,
@@ -54,7 +142,7 @@ class VotingPersistenceTest {
         val revealed = repository.revealVotedRole(round)
         assertEquals(RoleType.IMPOSTOR, revealed.revealedRole)
         assertFalse(revealed.roundFinished)
-        val next = repository.continueVoting(round)
+        val next = nextVote(round)
         assertNotEquals(first.phaseId, next.phaseId)
         assertFalse(target in next.candidateIds)
         assertFalse(target in next.voterIds)
@@ -64,7 +152,7 @@ class VotingPersistenceTest {
 
     @Test fun tieStartsRestrictedRunoffWithoutDeletingBallots() = runBlocking {
         val round = round(4)
-        val phase = repository.beginVoting(round)
+        val phase = beginVote(round)
         val ids = phase.voterIds
         val targets = listOf(ids[1], ids[0], ids[0], ids[1])
         ids.zip(targets).forEach { (voter, candidate) ->
@@ -73,7 +161,7 @@ class VotingPersistenceTest {
         }
         val tied = repository.votingSnapshot(round)
         assertEquals(VotingPhaseStatus.TIE, tied.status)
-        val next = repository.continueVoting(round)
+        val next = nextVote(round)
         assertEquals(ids.take(2), next.candidateIds)
         assertEquals(ids, next.voterIds)
         assertEquals(4, repository.getVotes(round).size)
@@ -81,7 +169,7 @@ class VotingPersistenceTest {
 
     @Test fun duplicateAndPrematureRevelationCannotModifyPersistedVote() = runBlocking {
         val round = round(3)
-        val phase = repository.beginVoting(round)
+        val phase = beginVote(round)
         val voter = phase.voterIds[0]
         SubmitVoteUseCase(repository)(round, phase.phaseId, voter, phase.voterIds[1])
         assertTrue(runCatching {
@@ -98,7 +186,7 @@ class VotingPersistenceTest {
         db = Room.databaseBuilder(context, AppDatabase::class.java, name).build()
         repository = GameRepository(db)
         val round = round(3)
-        val phase = repository.beginVoting(round)
+        val phase = beginVote(round)
         SubmitVoteUseCase(repository)(round, phase.phaseId, phase.voterIds[0], phase.voterIds[1])
         db.close()
         android.database.sqlite.SQLiteDatabase.openDatabase(context.getDatabasePath(name).path, null, 0).use { legacy ->
@@ -119,7 +207,7 @@ class VotingPersistenceTest {
 
     @Test fun finalRevelationScoresRoundExactlyOnce() = runBlocking {
         val round = round(3)
-        val phase = repository.beginVoting(round)
+        val phase = beginVote(round)
         val ids = phase.voterIds
         ids.forEach { voter ->
             SubmitVoteUseCase(repository)(round, phase.phaseId, voter, if (voter == ids[0]) ids[1] else ids[0])
@@ -167,7 +255,7 @@ class VotingPersistenceTest {
     @Test fun whiteGuessIsPrivateRequiredAndScoresExactlyOnce() = runBlocking {
         val round = whiteRound()
         val white = repository.getAssignments(round).single { it.role.type == RoleType.MR_WHITE }.gamePlayer.id
-        repository.beginVoting(round)
+        beginVote(round, RoleType.MR_WHITE)
         eliminate(round, white)
         val pending = repository.votingSnapshot(round)
         assertEquals(VotingPhaseStatus.GUESS_PENDING, pending.status)
@@ -181,7 +269,7 @@ class VotingPersistenceTest {
         val finished = FinishRoundUseCase(repository, CalculateScoreUseCase())(round)
         assertEquals(white, finished.mrWhiteWinnerId)
         assertEquals(setOf(RoleType.MR_WHITE), finished.winningRoles)
-        assertEquals(9, finished.scores[white]) // +2 correct vote and +7 individual victory
+        assertEquals(7, finished.scores[white]) // A eliminated Mr. White only receives the individual guess bonus.
         assertEquals(7, db.scoreDao().getRoundScores(round).single {
             it.gamePlayerId == white && it.reason == com.impostor.library.domain.enums.ScoreReason.MR_WHITE_WIN
         }.points)
@@ -195,12 +283,12 @@ class VotingPersistenceTest {
         val assignments = repository.getAssignments(round)
         val white = assignments.single { it.role.type == RoleType.MR_WHITE }.gamePlayer.id
         val impostor = assignments.single { it.role.type == RoleType.IMPOSTOR }.gamePlayer.id
-        repository.beginVoting(round)
+        beginVote(round, RoleType.MR_WHITE)
         eliminate(round, white)
         val result = repository.submitMrWhiteGuess(round, white, "moon")
         assertFalse(result.roundFinished)
         assertEquals(0, db.scoreDao().countRoundScores(round))
-        val next = repository.continueVoting(round)
+        val next = nextVote(round)
         assertFalse(white in next.voterIds || white in next.candidateIds)
         eliminate(round, impostor)
         assertTrue(repository.votingSnapshot(round).roundFinished)
@@ -217,7 +305,7 @@ class VotingPersistenceTest {
             StartConfiguredRoundUseCase(repository, AssignRolesUseCase { it }))
         assertTrue(runCatching { nextRound(gameId, previous, GameModeType.QUESTION,
             RoundContentInput("Who is funniest?", "Who is quietest?")) }.isFailure)
-        repository.beginVoting(previous)
+        beginVote(previous, RoleType.MR_WHITE)
         eliminate(previous, white)
         repository.submitMrWhiteGuess(previous, white, "Blue moon")
         val before = repository.classification(gameId)
@@ -237,9 +325,9 @@ class VotingPersistenceTest {
         val roles = repository.getAssignments(round)
         val impostor = roles.single { it.role.type == RoleType.IMPOSTOR }.gamePlayer.id
         val white = roles.single { it.role.type == RoleType.MR_WHITE }.gamePlayer.id
-        repository.beginVoting(round)
+        beginVote(round)
         eliminate(round, impostor)
-        repository.continueVoting(round)
+        nextVote(round, RoleType.MR_WHITE)
         eliminate(round, white)
         assertEquals(VotingPhaseStatus.GUESS_PENDING, repository.votingSnapshot(round).status)
         assertFalse(repository.votingSnapshot(round).roundFinished)
@@ -253,12 +341,12 @@ class VotingPersistenceTest {
         val round = whiteRound(2)
         val roles = repository.getAssignments(round)
         val whites = roles.filter { it.role.type == RoleType.MR_WHITE }.map { it.gamePlayer.id }
-        repository.beginVoting(round)
-        for (white in whites) {
+        beginVote(round, RoleType.MR_WHITE)
+        for ((index, white) in whites.withIndex()) {
             eliminate(round, white)
             val result = repository.submitMrWhiteGuess(round, white, "Wrong word")
             assertFalse(result.roundFinished)
-            repository.continueVoting(round)
+            if (index < whites.lastIndex) nextVote(round, RoleType.MR_WHITE)
         }
         val phases = db.voteDao().getPhases(round).filter { it.guessText != null }
         assertEquals(2, phases.size)
@@ -279,6 +367,65 @@ class VotingPersistenceTest {
                 com.impostor.library.domain.enums.QuestionCategory.NBA)
         }.isFailure)
         assertEquals(1, db.contentDao().getPacks().size)
+    }
+
+    @Test fun builtInCatalogueSeedsOnceAndKeepsNflSeparateFromFootball() = runBlocking {
+        val content = com.impostor.library.data.repository.ContentRepository(db.contentDao())
+        val nfl = content.selectBuiltInContent(GameModeType.QUESTION,
+            com.impostor.library.domain.enums.QuestionCategory.NFL)
+        assertTrue(nfl.first.text.contains("NFL"))
+        assertNotEquals(nfl.first.text, nfl.second.text)
+        val pack = requireNotNull(db.contentDao().getBuiltInPack("Impostor built-in v1"))
+        val initial = db.contentDao().getSets(pack.id, GameModeType.QUESTION).size
+        content.selectBuiltInContent(GameModeType.CLASSIC, null)
+        assertEquals(initial, db.contentDao().getSets(pack.id, GameModeType.QUESTION).size)
+        assertEquals(10, db.contentDao().getSets(pack.id, GameModeType.CLASSIC).size)
+        assertEquals(5, db.contentDao().getBuiltInSets(GameModeType.QUESTION, "nfl").size)
+        assertEquals(2, db.contentDao().getBuiltInSets(GameModeType.QUESTION, "football").size)
+    }
+
+    @Test fun builtInSelectionUsesEachNflPromptBeforeRepeating() = runBlocking {
+        repository.prepareDefaults()
+        val playerRepository = PlayerRepository(db.playerDao())
+        val ids = (1..3).map { playerRepository.createPlayer("Player $it", null).toInt() }
+        val gameId = repository.createGame(ids, 1, 0).toInt()
+        val category = com.impostor.library.domain.enums.QuestionCategory.NFL
+        val catalogue = com.impostor.library.data.repository.ContentRepository(db.contentDao())
+        val seen = mutableSetOf<Int>()
+        val modeId = requireNotNull(repository.getMode(GameModeType.QUESTION)).id
+        repeat(5) { index ->
+            val pair = catalogue.selectBuiltInContent(GameModeType.QUESTION, category, gameId)
+            assertTrue(seen.add(pair.first.contentSetId))
+            db.roundDao().insertRound(com.impostor.library.data.local.entity.RoundEntity(
+                gameId = gameId, gameModeId = modeId,
+                contentSetId = pair.first.contentSetId, roundNumber = index + 1))
+        }
+        assertEquals(5, seen.size)
+        assertTrue(catalogue.selectBuiltInContent(GameModeType.QUESTION, category, gameId)
+            .first.contentSetId in seen)
+    }
+
+    @Test fun questionsRequireEveryPrivateAnswerBeforeVoting() = runBlocking {
+        repository.prepareDefaults()
+        val playerRepository = PlayerRepository(db.playerDao())
+        val ids = (1..3).map { playerRepository.createPlayer("Player $it", null).toInt() }
+        val game = repository.createGame(ids, 1, 0).toInt()
+        val pair = com.impostor.library.data.repository.ContentRepository(db.contentDao())
+            .selectBuiltInContent(GameModeType.QUESTION,
+                com.impostor.library.domain.enums.QuestionCategory.NBA)
+        val round = StartConfiguredRoundUseCase(repository, AssignRolesUseCase { it })(
+            game, GameModeType.QUESTION, pair.first, pair.second).toInt()
+        assertTrue(runCatching { repository.beginVoting(round) }.isFailure)
+        val voters = repository.getAssignments(round).map { it.gamePlayer.id }
+        voters.forEachIndexed { index, voter ->
+            SubmitAnswerUseCase(repository)(com.impostor.library.data.local.entity.AnswerEntity(
+                roundId = round, gamePlayerId = voter, answerText = "Player answer $index"))
+        }
+        assertEquals(3, repository.beginVoting(round).voterIds.size)
+        assertTrue(runCatching {
+            SubmitAnswerUseCase(repository)(com.impostor.library.data.local.entity.AnswerEntity(
+                roundId = round, gamePlayerId = voters.first(), answerText = "Changed"))
+        }.isFailure)
     }
 
 }

@@ -11,6 +11,6 @@ interface AnswerDao {
     @Insert
     suspend fun insert(answer: AnswerEntity): Long
 
-    @Query("SELECT * FROM answers WHERE round_id = :roundId")
+    @Query("SELECT * FROM answers WHERE round_id = :roundId ORDER BY answer_id")
     suspend fun getAnswers(roundId: Int): List<AnswerEntity>
 }

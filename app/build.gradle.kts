@@ -29,9 +29,20 @@ android {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
     }
+    val releaseStorePath = System.getenv("IMPOSTOR_KEYSTORE")
+    if (!releaseStorePath.isNullOrBlank()) {
+        signingConfigs.create("impostorRelease") {
+            storeFile = file(releaseStorePath)
+            storePassword = System.getenv("IMPOSTOR_STORE_PASSWORD")
+            keyAlias = System.getenv("IMPOSTOR_KEY_ALIAS")
+            keyPassword = System.getenv("IMPOSTOR_KEY_PASSWORD")
+        }
+    }
     buildTypes {
         getByName("release") {
             isMinifyEnabled = false
+            if (!releaseStorePath.isNullOrBlank())
+                signingConfig = signingConfigs.getByName("impostorRelease")
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"

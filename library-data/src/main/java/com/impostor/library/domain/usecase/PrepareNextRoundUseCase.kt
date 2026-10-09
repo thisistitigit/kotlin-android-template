@@ -14,7 +14,9 @@ class PrepareNextRoundUseCase(
     suspend operator fun invoke(gameId: Int, previousRoundId: Int, mode: GameModeType,
         input: RoundContentInput): PreparedGame = repository.transaction {
         require(repository.isLatestFinishedRound(gameId, previousRoundId)) { "Finish the previous round first." }
-        val content = contentRepository.saveCustomContent(mode, input.normal, input.adversary, input.category)
+        val content = if (input.normal.isBlank() && input.adversary.isBlank())
+            contentRepository.selectBuiltInContent(mode, input.category, gameId)
+        else contentRepository.saveCustomContent(mode, input.normal, input.adversary, input.category)
         val roundId = startConfiguredRound(gameId, mode, content.first, content.second).toInt()
         val players = requireNotNull(repository.getGame(gameId)).players.associateBy { it.gamePlayer.id }
         val assignments = repository.getAssignments(roundId).sortedBy { it.gamePlayer.seatOrder }

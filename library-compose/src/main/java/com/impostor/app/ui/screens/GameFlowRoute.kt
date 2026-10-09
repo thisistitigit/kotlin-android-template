@@ -3,10 +3,8 @@ package com.impostor.app.ui.screens
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.imePadding
 import androidx.compose.material.AlertDialog
 import androidx.compose.material.CircularProgressIndicator
-import androidx.compose.material.OutlinedTextField
 import androidx.compose.material.Text
 import androidx.compose.material.TextButton
 import androidx.compose.runtime.getValue
@@ -21,10 +19,6 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.impostor.app.ui.components.GameScreenLayout
-import com.impostor.app.ui.components.GameActionButton
-import com.impostor.app.ui.components.AppButton
-import com.impostor.app.ui.components.AppButtonStyle
 import com.impostor.library.compose.R
 import com.impostor.library.domain.GameBackend
 
@@ -43,10 +37,15 @@ fun GameFlowRoute(setup: GameFlowSetup, sessionKey: String, onExit: () -> Unit) 
     val state by model.state.collectAsStateWithLifecycle()
     BackHandler {
         if (!state.busy) when (state.destination) {
-            GameFlowDestination.CONTENT_SETUP -> if (state.mode == com.impostor.library.domain.enums.GameModeType.QUESTION) model.editCategory() else onExit()
+            GameFlowDestination.CATEGORY_SELECTION -> if (state.selectingNextRound) model.showSummary() else onExit()
+            GameFlowDestination.PREPARING -> Unit
             GameFlowDestination.CONTENT_REVEAL -> model.hideContent()
             GameFlowDestination.READY -> model.readyBack()
+            GameFlowDestination.ANSWER_INPUT -> model.hideAnswerInput()
+            GameFlowDestination.ANSWER_TURN -> Unit
+            GameFlowDestination.ANSWER_RESULTS -> Unit
             GameFlowDestination.SCORES -> model.showSummary()
+            GameFlowDestination.FINISHED -> model.finishSession(onExit)
             GameFlowDestination.MR_WHITE_GUESS -> Unit
             GameFlowDestination.ROUND_CONTENT -> model.showSummary()
             GameFlowDestination.VOTING -> model.vote(VotingEvent.Back)
@@ -69,30 +68,9 @@ fun GameFlowRoute(setup: GameFlowSetup, sessionKey: String, onExit: () -> Unit) 
 private fun GameFlowContent(state: GameFlowUiState, onExit: () -> Unit, model: GameFlowViewModel) {
     when (state.destination) {
         GameFlowDestination.CATEGORY_SELECTION -> CategoryScreen(state.selectedCategory, model::selectCategory,
-            onExit, model::confirmCategory, enabled = !state.busy)
-        GameFlowDestination.CONTENT_SETUP -> GameScreenLayout(
-            onBack = { if (state.mode == com.impostor.library.domain.enums.GameModeType.QUESTION) model.editCategory() else onExit() },
-            modifier = Modifier.imePadding(), bottomAction = {
-                GameActionButton(stringResource(R.string.play_label), model::prepare,
-                    enabled = !state.busy && state.normalContent.isNotBlank() && state.adversaryContent.isNotBlank())
-            }) {
-            Text(stringResource(R.string.prepare_content))
-            if (state.players.isEmpty()) {
-                AppButton(stringResource(R.string.classic), { model.setMode(com.impostor.library.domain.enums.GameModeType.CLASSIC) },
-                    enabled = !state.busy, style = AppButtonStyle.SECONDARY)
-                AppButton(stringResource(R.string.questions), { model.setMode(com.impostor.library.domain.enums.GameModeType.QUESTION) },
-                    enabled = !state.busy, style = AppButtonStyle.SECONDARY)
-                Text(stringResource(if (state.mode == com.impostor.library.domain.enums.GameModeType.QUESTION)
-                    R.string.questions else R.string.classic))
-            }
-            Text(stringResource(R.string.prepare_content_description))
-            OutlinedTextField(state.normalContent, { model.updateContent(it, state.adversaryContent) },
-                label = { Text(stringResource(R.string.civilian_content)) }, enabled = !state.busy)
-            OutlinedTextField(state.adversaryContent, { model.updateContent(state.normalContent, it) },
-                label = { Text(stringResource(R.string.adversary_content)) }, enabled = !state.busy)
-            if (state.mode == com.impostor.library.domain.enums.GameModeType.QUESTION)
-                Text(stringResource(R.string.selected_category_label, stringResource(categoryLabelResource(state.selectedCategory))))
-        }
+            { if (state.selectingNextRound) model.showSummary() else onExit() },
+            model::confirmCategory, enabled = !state.busy)
+        GameFlowDestination.PREPARING -> Box(Modifier.fillMaxSize())
         GameFlowDestination.TURN -> PlayerTurnScreen(
             PlayerTurnUiState(requireNotNull(state.currentPlayer).avatar, state.viewedPlayers.map { it.avatar },
                 state.turnCatRes, stringResource(R.string.see_content)), onExit, model::showContent)
@@ -100,15 +78,22 @@ private fun GameFlowContent(state: GameFlowUiState, onExit: () -> Unit, model: G
             ContentRevealUiState(requireNotNull(state.currentPlayer).avatar, state.currentPlayer.number,
                 requireNotNull(state.content), R.drawable.your_word_cat), model::hideContent, model::finishReveal)
         GameFlowDestination.READY -> EveryoneReadyScreen(state.players.map { it.avatar }, model::readyBack,
-            model::beginVoting)
+            if (state.mode == com.impostor.library.domain.enums.GameModeType.QUESTION)
+                model::beginDiscussion else model::beginVoting)
+        GameFlowDestination.ANSWER_TURN -> AnswerTurnScreen(requireNotNull(state.currentPlayer),
+            state.answeredPlayers, model::showAnswerInput)
+        GameFlowDestination.ANSWER_INPUT -> AnswerInputScreen(requireNotNull(state.currentPlayer),
+            requireNotNull(state.answerPrompt), state.answerText, state.busy,
+            model::updateAnswer, model::hideAnswerInput, model::submitAnswer)
+        GameFlowDestination.ANSWER_RESULTS -> AnswerResultsScreen(state.answers, model::beginVoting)
         GameFlowDestination.VOTING -> VotingRoute(state.voting, model::vote)
         GameFlowDestination.MR_WHITE_GUESS -> MrWhiteGuessScreen(
             MrWhiteGuessUiState(requireNotNull(state.voting.result?.selectedPlayer), state.guess, state.busy),
             model::updateGuess, model::submitGuess)
         GameFlowDestination.ROUND_CONTENT -> RoundContentRevealScreen(requireNotNull(state.roundContent),
             model::showSummary, model::showSummary)
-        GameFlowDestination.FINISHED -> RoundSummaryScreen(requireNotNull(state.summary), onExit,
-            model::playAgain, model::showScores)
+        GameFlowDestination.FINISHED -> RoundSummaryScreen(requireNotNull(state.summary),
+            { model.finishSession(onExit) }, model::playAgain, model::showScores)
         GameFlowDestination.SCORES -> ScoresScreen(state.classification, model::showSummary, model::playAgain)
 
     }
@@ -118,6 +103,8 @@ private fun GameFlowContent(state: GameFlowUiState, onExit: () -> Unit, model: G
 fun VotingRoute(state: VotingUiState, onEvent: (VotingEvent) -> Unit) {
     val back = { onEvent(VotingEvent.Back) }
     when (state.destination) {
+        VotingDestination.SELECT_ROLE -> VoteRoleSelectionScreen(state.availableTargets,
+            { onEvent(VotingEvent.SelectRole(it)) })
         VotingDestination.VOTE_INTRO -> VoteIntroScreen(requireNotNull(state.currentPlayer), back,
             { onEvent(VotingEvent.OpenSelection) })
         VotingDestination.SELECT_CANDIDATE -> VoteSelectionScreen(state, back,
@@ -129,6 +116,7 @@ fun VotingRoute(state: VotingUiState, onEvent: (VotingEvent) -> Unit) {
             { onEvent(if (state.result.isTie) VotingEvent.Continue else VotingEvent.Reveal) })
         VotingDestination.REVEAL_ROLE -> VoteRoleRevealScreen(
             VoteRoleRevealUiState(requireNotNull(state.result?.selectedPlayer),
-                requireNotNull(state.revealedRole), state.roundFinished), back, { onEvent(VotingEvent.Continue) })
+                requireNotNull(state.revealedRole), state.roundFinished, state.target), back,
+            { onEvent(VotingEvent.Continue) })
     }
 }

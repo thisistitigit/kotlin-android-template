@@ -6,6 +6,7 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -82,13 +83,13 @@ private fun ReadyPlayersCard(
         contentPadding = Spacing.medium
     ) {
         val avatarSize = 60.dp
-        val overlapStep = 40.dp
-        val totalWidth = avatarSize + (overlapStep * (players.size - 1))
-
-        Box(
+        BoxWithConstraints(
             modifier = Modifier.fillMaxSize(),
             contentAlignment = Alignment.Center
         ) {
+            val overlapStep = if (players.size <= 1) 0.dp else
+                minOf(40.dp, ((maxWidth - avatarSize) / (players.size - 1)).coerceAtLeast(0.dp))
+            val totalWidth = avatarSize + (overlapStep * (players.size - 1))
             // Overlapping avatars similar to SeenAvatars but centered
             Box(modifier = Modifier.width(totalWidth).height(avatarSize + 4.dp)) {
                 players.forEachIndexed { index, player ->

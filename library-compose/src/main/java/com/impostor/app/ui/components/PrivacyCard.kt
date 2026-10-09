@@ -24,16 +24,19 @@ import com.impostor.app.ui.theme.Spacing
 import com.composables.icons.lucide.R as LucideR
 
 @Composable
-fun PrivacyCard(text: String, modifier: Modifier = Modifier) {
-    AppCard(modifier = modifier, backgroundColor = DeepPurple, contentPadding = Spacing.large) {
+fun PrivacyCard(text: String, modifier: Modifier = Modifier, compact: Boolean = false) {
+    AppCard(modifier = modifier, backgroundColor = DeepPurple,
+        contentPadding = if (compact) Spacing.medium else Spacing.large) {
         Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(Spacing.medium)) {
-            Box(Modifier.size(72.dp).background(MainPurple.copy(alpha = 0.55f), CircleShape),
+            verticalArrangement = Arrangement.spacedBy(if (compact) Spacing.small else Spacing.medium)) {
+            Box(Modifier.size(if (compact) 48.dp else 72.dp)
+                .background(MainPurple.copy(alpha = 0.55f), CircleShape),
                 contentAlignment = Alignment.Center) {
                 Icon(painterResource(LucideR.drawable.lucide_ic_lock_keyhole), null,
-                    tint = AppBackground, modifier = Modifier.size(40.dp))
+                    tint = AppBackground, modifier = Modifier.size(if (compact) 28.dp else 40.dp))
             }
-            Text(text, style = MaterialTheme.typography.body1, color = AppWhite, textAlign = TextAlign.Center)
+            Text(text, style = if (compact) MaterialTheme.typography.body2 else MaterialTheme.typography.body1,
+                color = AppWhite, textAlign = TextAlign.Center)
         }
     }
 }

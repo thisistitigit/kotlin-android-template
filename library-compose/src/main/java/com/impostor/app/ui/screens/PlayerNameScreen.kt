@@ -1,6 +1,8 @@
 package com.impostor.app.ui.screens
 
 import android.graphics.Bitmap
+import android.net.Uri
+import androidx.core.content.FileProvider
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.DrawableRes
@@ -25,12 +27,17 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.Icon
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusDirection
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
@@ -55,6 +62,8 @@ import com.impostor.app.ui.theme.Spacing
 import com.impostor.app.ui.theme.ImpostorTheme
 import com.impostor.library.compose.R
 import com.composables.icons.lucide.R as LucideR
+import java.io.File
+import java.util.UUID
 
 data class PlayerNameUiState(
     val playerIndex: Int,
@@ -74,17 +83,29 @@ data class PlayerNameCallbacks(
 fun PlayerNameRoute(
     state: PlayerNameUiState,
     callbacks: PlayerNameCallbacks,
-    onPhotoTaken: (Bitmap) -> Unit,
+    onPhotoTaken: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val context = LocalContext.current
+    var pendingPhotoPath by rememberSaveable { mutableStateOf<String?>(null) }
     val cameraLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.TakePicturePreview(),
-        onResult = { result -> result?.let(onPhotoTaken) }
-    )
+        contract = ActivityResultContracts.TakePicture(),
+        onResult = { captured ->
+            pendingPhotoPath?.let { path ->
+                if (captured) onPhotoTaken(File(path).toURI().toString()) else File(path).delete()
+            }
+            pendingPhotoPath = null
+        })
     PlayerNameScreen(
         state = state,
         callbacks = callbacks,
-        onTakePhoto = { cameraLauncher.launch(null) },
+        onTakePhoto = {
+            val directory = File(context.filesDir, "player-photos").apply { mkdirs() }
+            val file = File(directory, "${UUID.randomUUID()}.jpg")
+            pendingPhotoPath = file.absolutePath
+            val uri: Uri = FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", file)
+            cameraLauncher.launch(uri)
+        },
         modifier = modifier
     )
 }
@@ -180,7 +201,7 @@ private fun CameraButton(onClick: () -> Unit, modifier: Modifier = Modifier) {
     val description = stringResource(R.string.take_photo)
     Box(
         modifier = modifier
-            .size(32.dp)
+            .size(Spacing.minimumTouchTarget)
             .clip(CircleShape)
             .background(MarkerYellow)
             .clickable(role = Role.Button, onClick = onClick)

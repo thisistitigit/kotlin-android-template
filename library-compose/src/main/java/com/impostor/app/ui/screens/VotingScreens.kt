@@ -6,9 +6,14 @@ import android.content.Context
 import android.content.res.Resources
 import android.util.TypedValue
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.size
@@ -27,10 +32,12 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.impostor.app.ui.components.GameScreenLayout
 import com.impostor.app.ui.components.GameActionButton
+import com.impostor.app.ui.components.AppCard
 import com.impostor.app.ui.components.PlayerAvatar
 import com.impostor.app.ui.components.PlayerChip
 import com.impostor.app.ui.components.PrivacyCard
@@ -48,16 +55,43 @@ import com.impostor.library.compose.R
 import com.impostor.library.domain.enums.RoleType
 
 @Composable
-internal fun VotingAsset(name: String, modifier: Modifier = Modifier) {
+internal fun VotingAsset(name: String, modifier: Modifier = Modifier, fitInBounds: Boolean = false) {
     val context = LocalContext.current
     val resource = remember(name, context) { resolveVotingAsset(context, name) }
-    Box(modifier.heightIn(min = 160.dp, max = 320.dp).fillMaxWidth(), contentAlignment = Alignment.Center) {
+    Box((if (fitInBounds) modifier else modifier.heightIn(min = 160.dp, max = 320.dp)).fillMaxWidth(),
+        contentAlignment = Alignment.Center) {
         if (resource != 0) {
             Image(painterResource(resource), null, contentScale = ContentScale.Fit,
-                modifier = Modifier.sizeIn(maxWidth = 320.dp, maxHeight = 320.dp).fillMaxWidth())
+                modifier = if (fitInBounds) Modifier.fillMaxSize()
+                    else Modifier.sizeIn(maxWidth = 320.dp, maxHeight = 320.dp).fillMaxWidth())
         } else {
             Text(stringResource(R.string.asset_placeholder, "$name.png"), color = LightPurple,
                 textAlign = TextAlign.Center)
+        }
+    }
+}
+
+@Composable
+fun VoteRoleSelectionScreen(availableTargets: List<RoleType>, onSelect: (RoleType) -> Unit,
+    modifier: Modifier = Modifier) {
+    GameScreenLayout(onBack = null, modifier = modifier,
+        contentArrangement = Arrangement.spacedBy(Spacing.large)) {
+        VotingTitle(stringResource(R.string.choose_vote_role), AppWhite)
+        Text(stringResource(R.string.choose_vote_role_hint), color = AppWhite,
+            textAlign = TextAlign.Center)
+        availableTargets.forEach { role ->
+            val label = if (role == RoleType.MR_WHITE) R.string.vote_for_mr_white else R.string.vote_for_impostor
+            val image = if (role == RoleType.MR_WHITE) R.drawable.mr_white else R.drawable.impostor
+            AppCard(modifier = Modifier.fillMaxWidth().heightIn(min = 112.dp)
+                .clickable(role = Role.Button) { onSelect(role) },
+                backgroundColor = DeepPurple, borderColor = LightPurple) {
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically) {
+                    Text(stringResource(label), style = AppTextStyles.labelsScroll, color = AppWhite)
+                    Image(painterResource(image), null, modifier = Modifier.size(72.dp),
+                        contentScale = ContentScale.Fit)
+                }
+            }
         }
     }
 }
@@ -80,12 +114,21 @@ internal fun VotingTitle(text: String, color: Color = MainPurple) {
 
 @Composable
 fun VoteIntroScreen(player: PlayerUi, onBack: () -> Unit, onVote: () -> Unit, modifier: Modifier = Modifier) {
-    GameScreenLayout(onBack, modifier, contentArrangement = Arrangement.spacedBy(Spacing.medium), bottomAction = { GameActionButton(stringResource(R.string.vote), onClick = onVote) }) {
-        PlayerChip(player.avatar, player.number)
-        VotingTitle(stringResource(R.string.vote))
-        Text(stringResource(R.string.voting_your_turn), style = MaterialTheme.typography.body1, color = AppWhite)
-        VotingAsset("pointing_cat")
-        PrivacyCard(stringResource(R.string.dont_show_vote), Modifier.fillMaxWidth())
+    GameScreenLayout(onBack, modifier, scrollContent = false,
+        bottomAction = { GameActionButton(stringResource(R.string.vote), onClick = onVote) }) {
+        BoxWithConstraints(Modifier.fillMaxSize()) {
+            val compact = maxHeight < 500.dp
+            Column(Modifier.fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(Spacing.small)) {
+                PlayerChip(player.avatar, player.number)
+                Text(stringResource(R.string.vote), style = if (compact) AppTextStyles.labelsScroll
+                    else AppTextStyles.title, color = MainPurple)
+                Text(stringResource(R.string.voting_your_turn), style = MaterialTheme.typography.body1,
+                    color = AppWhite)
+                VotingAsset("pointing_cat", Modifier.weight(1f), fitInBounds = true)
+                PrivacyCard(stringResource(R.string.dont_show_vote), Modifier.fillMaxWidth(), compact)
+            }
+        }
     }
 }
 

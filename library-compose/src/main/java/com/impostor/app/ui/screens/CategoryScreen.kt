@@ -48,12 +48,13 @@ import kotlinx.coroutines.launch
 import kotlin.math.abs
 
 private data class CategoryPresentation(val category: QuestionCategory,
-    @StringRes val label: Int, @RawRes val image: Int)
+    @StringRes val label: Int, @RawRes val image: Int?)
 
 private val categories = listOf(
     CategoryPresentation(QuestionCategory.ACTORS, R.string.category_actors, R.raw.category_actors),
     CategoryPresentation(QuestionCategory.MOVIES, R.string.category_movies, R.raw.category_movies),
     CategoryPresentation(QuestionCategory.NBA, R.string.category_nba, R.raw.category_nba),
+    CategoryPresentation(QuestionCategory.NFL, R.string.category_nfl, null),
     CategoryPresentation(QuestionCategory.FOOTBALL, R.string.category_football, R.raw.category_football),
     CategoryPresentation(QuestionCategory.SERIES, R.string.category_series, R.raw.category_series),
     CategoryPresentation(QuestionCategory.SINGERS, R.string.category_singers, R.raw.category_singers)
@@ -133,8 +134,6 @@ private fun CategoryCarousel(selected: QuestionCategory, onSelected: (QuestionCa
     CategoryScreen(QuestionCategory.SERIES, {}, {}, {})
 }
 
-internal fun categoryLabelResource(category: QuestionCategory): Int = categories.single { it.category == category }.label
-
 @Preview @Composable internal fun CategoryActorsPreview() = ImpostorTheme {
     CategoryScreen(QuestionCategory.ACTORS, {}, {}, {})
 }
@@ -143,6 +142,9 @@ internal fun categoryLabelResource(category: QuestionCategory): Int = categories
 }
 @Preview @Composable internal fun CategoryFootballPreview() = ImpostorTheme {
     CategoryScreen(QuestionCategory.FOOTBALL, {}, {}, {})
+}
+@Preview @Composable internal fun CategoryNflPreview() = ImpostorTheme {
+    CategoryScreen(QuestionCategory.NFL, {}, {}, {})
 }
 @Preview @Composable internal fun CategorySingersPreview() = ImpostorTheme {
     CategoryScreen(QuestionCategory.SINGERS, {}, {}, {})

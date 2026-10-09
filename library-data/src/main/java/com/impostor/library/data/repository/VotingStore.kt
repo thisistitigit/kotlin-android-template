@@ -5,6 +5,7 @@ import com.impostor.library.data.local.AppDatabase
 import com.impostor.library.data.local.entity.VoteEntity
 import com.impostor.library.data.local.entity.VotingPhaseEntity
 import com.impostor.library.domain.enums.RoleType
+import com.impostor.library.domain.enums.GameModeType
 import com.impostor.library.domain.enums.RoundStatus
 import com.impostor.library.domain.model.Ballot
 import com.impostor.library.domain.model.VotingPhaseStatus
@@ -20,6 +21,12 @@ internal class VotingStore(private val db: AppDatabase) {
     suspend fun begin(roundId: Int): VotingSnapshot = db.withTransaction {
         val round = requireNotNull(db.roundDao().getRound(roundId))
         require(round.status != RoundStatus.FINISHED)
+        if (db.roundDao().getRoundMode(roundId) == GameModeType.QUESTION) {
+            val players = db.roundDao().getAssignments(roundId).size
+            require(db.answerDao().getAnswers(roundId).size == players) {
+                "Every player must answer before voting."
+            }
+        }
         if (dao.getPhases(roundId).isEmpty()) createPhase(roundId)
         db.roundDao().updateStatus(roundId, RoundStatus.VOTING)
         snapshot(roundId)
@@ -31,6 +38,8 @@ internal class VotingStore(private val db: AppDatabase) {
         val leaders = VotingRules.leaders(ballots)
         val roles = roles(roundId)
         val eliminated = eliminated(roundId)
+        val availableTargets = listOf(RoleType.IMPOSTOR, RoleType.MR_WHITE)
+            .filter { target -> roles.any { (id, role) -> id !in eliminated && role == target } }
         val status = if (phase.status == "OPEN" && ballots.size == ids(phase.voters).size) {
             if (leaders.size > 1) VotingPhaseStatus.TIE else VotingPhaseStatus.RESULTS
         } else VotingPhaseStatus.valueOf(phase.status)
@@ -39,8 +48,20 @@ internal class VotingStore(private val db: AppDatabase) {
             ids(phase.voters), ids(phase.candidates), ballots, leaders, phase.pendingHandoff,
             if (status in setOf(VotingPhaseStatus.REVEALED, VotingPhaseStatus.GUESS_PENDING)) roles[phase.selectedPlayerId] else null,
             roles.count { (id, role) -> id !in eliminated && role != RoleType.CIVILIAN },
-            db.roundDao().getRound(roundId)?.status == RoundStatus.FINISHED
+            db.roundDao().getRound(roundId)?.status == RoundStatus.FINISHED,
+            availableTargets
         )
+    }
+
+    suspend fun selectTarget(roundId: Int, target: RoleType): VotingSnapshot = db.withTransaction {
+        val state = snapshot(roundId)
+        require(state.status == VotingPhaseStatus.TARGET_SELECTION ||
+            state.status == VotingPhaseStatus.OPEN && state.ballots.isEmpty() && !state.pendingHandoff)
+        require(!state.roundFinished)
+        require(target in state.availableTargets) { "This role is not available in the round." }
+        val phase = requireNotNull(dao.getPhase(state.phaseId))
+        dao.updatePhase(phase.copy(target = target.name, status = VotingPhaseStatus.OPEN.name))
+        snapshot(roundId)
     }
 
     suspend fun submit(vote: VoteEntity) = db.withTransaction {
@@ -65,7 +86,7 @@ internal class VotingStore(private val db: AppDatabase) {
         require(state.status == VotingPhaseStatus.RESULTS && !state.pendingHandoff)
         val phase = requireNotNull(dao.getPhase(state.phaseId))
         val selected = state.leaderIds.single()
-        val pendingGuess = roles(roundId)[selected] == RoleType.MR_WHITE
+        val pendingGuess = state.target == RoleType.MR_WHITE && roles(roundId)[selected] == RoleType.MR_WHITE
         dao.updatePhase(phase.copy(status = if (pendingGuess) "GUESS_PENDING" else "REVEALED",
             selectedPlayerId = selected))
         if (!pendingGuess) finishIfNecessary(roundId)
@@ -105,16 +126,28 @@ internal class VotingStore(private val db: AppDatabase) {
 
     private suspend fun calculation(roundId: Int): com.impostor.library.domain.model.ScoreCalculation {
         val phases = dao.getPhases(roundId).filter { it.status == "REVEALED" }
-        val ballots = phases.flatMap { dao.getPhaseVotes(it.id) }
-            .map { Ballot(it.voterGamePlayerId, it.votedGamePlayerId) }
+        val roleByPlayer = roles(roundId)
+        val ballots = phases.flatMap { phase ->
+            val target = RoleType.valueOf(phase.target)
+            dao.getPhaseVotes(phase.id).filter { roleByPlayer[it.votedGamePlayerId] == target }
+                .map { Ballot(it.voterGamePlayerId, it.votedGamePlayerId) }
+        }
         val winner = phases.firstOrNull { it.guessCorrect == true }?.selectedPlayerId
-        return CalculateScoreUseCase().sequential(roundId, roles(roundId), eliminated(roundId), ballots, winner)
+        val incorrectTarget = phases.lastOrNull { phase ->
+            roleByPlayer[phase.selectedPlayerId] != RoleType.valueOf(phase.target)
+        }?.target?.let(RoleType::valueOf)
+        return CalculateScoreUseCase().sequential(roundId, roleByPlayer, eliminated(roundId),
+            ballots, winner, incorrectTarget)
     }
 
     private suspend fun finishIfNecessary(roundId: Int) {
         val active = roles(roundId).filterKeys { it !in eliminated(roundId) }
         val guessed = dao.getPhases(roundId).any { it.guessCorrect == true }
-        if (guessed || active.values.none { it != RoleType.CIVILIAN } || active.values.none { it == RoleType.CIVILIAN }) {
+        val last = dao.getPhases(roundId).last()
+        val wrongTarget = last.status == "REVEALED" &&
+            roles(roundId)[last.selectedPlayerId] != RoleType.valueOf(last.target)
+        if (guessed || wrongTarget || active.values.none { it != RoleType.CIVILIAN } ||
+            active.values.none { it == RoleType.CIVILIAN }) {
             require(db.scoreDao().countRoundScores(roundId) == 0)
             db.scoreDao().insertAll(calculation(roundId).events)
             db.roundDao().finishRound(roundId)
@@ -124,10 +157,12 @@ internal class VotingStore(private val db: AppDatabase) {
     private suspend fun createPhase(roundId: Int, runoff: List<Int>? = null, target: RoleType? = null) {
         val active = roles(roundId).filterKeys { it !in eliminated(roundId) }
         require(active.size >= 2)
-        val nextTarget = target ?: if (RoleType.IMPOSTOR in active.values) RoleType.IMPOSTOR else RoleType.MR_WHITE
+        val chooseTarget = target == null && db.roundDao().getRoundMode(roundId) != GameModeType.QUESTION
+        val nextTarget = target ?: RoleType.IMPOSTOR
         dao.insertPhase(VotingPhaseEntity(
             roundId = roundId, target = nextTarget.name,
-            voters = active.keys.joinToString(","), candidates = (runoff ?: active.keys.toList()).joinToString(",")
+            voters = active.keys.joinToString(","), candidates = (runoff ?: active.keys.toList()).joinToString(","),
+            status = if (chooseTarget) VotingPhaseStatus.TARGET_SELECTION.name else VotingPhaseStatus.OPEN.name
         ))
     }
 

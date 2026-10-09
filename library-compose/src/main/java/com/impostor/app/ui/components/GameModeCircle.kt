@@ -58,7 +58,7 @@ fun GameModeCircle(
             )
         }
         Spacer(Modifier.height(spacerHeight))
-        Text(text = label, style = MaterialTheme.typography.h5)
+        Text(text = label, style = MaterialTheme.typography.h5, color = AppWhite)
     }
 }
 

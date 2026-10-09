@@ -23,6 +23,20 @@ interface ContentDao {
     @Query("SELECT * FROM content_packs ORDER BY name")
     suspend fun getPacks(): List<ContentPackEntity>
 
+    @Query("SELECT * FROM content_packs WHERE name = :name AND is_custom = 0 LIMIT 1")
+    suspend fun getBuiltInPack(name: String): ContentPackEntity?
+
+    @Query("SELECT * FROM content_sets WHERE description = :key AND pack_id = :packId LIMIT 1")
+    suspend fun getBuiltInSet(packId: Int, key: String): ContentSetEntity?
+
+    @Query("""SELECT cs.* FROM content_sets cs JOIN content_packs cp ON cp.pack_id = cs.pack_id
+        WHERE cp.is_custom = 0 AND cs.game_mode_type = :mode
+        AND ((:category IS NULL AND cs.category IS NULL) OR cs.category = :category)""")
+    suspend fun getBuiltInSets(mode: GameModeType, category: String?): List<ContentSetEntity>
+
+    @Query("SELECT content_set_id FROM rounds WHERE game_id = :gameId AND content_set_id IS NOT NULL")
+    suspend fun getUsedSetIds(gameId: Int): List<Int>
+
     @Query(
         """
         SELECT * FROM content_sets

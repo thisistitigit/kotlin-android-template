@@ -2,7 +2,7 @@ package com.impostor.library.domain.model
 
 import com.impostor.library.domain.enums.RoleType
 
-enum class VotingPhaseStatus { OPEN, RESULTS, TIE, GUESS_PENDING, REVEALED }
+enum class VotingPhaseStatus { TARGET_SELECTION, OPEN, RESULTS, TIE, GUESS_PENDING, REVEALED }
 
 data class Ballot(val voterId: Int, val candidateId: Int)
 
@@ -18,7 +18,8 @@ data class VotingSnapshot(
     val pendingHandoff: Boolean,
     val revealedRole: RoleType?,
     val remainingAdversaries: Int,
-    val roundFinished: Boolean
+    val roundFinished: Boolean,
+    val availableTargets: List<RoleType> = emptyList()
 ) {
     val nextVoterId: Int? get() = voterIds.firstOrNull { id -> ballots.none { it.voterId == id } }
 }

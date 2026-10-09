@@ -1,13 +1,13 @@
 package com.impostor.app.ui
 
 import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -15,7 +15,10 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import com.impostor.app.ui.screens.HomeScreen
+import com.impostor.app.ui.screens.GameSessionStore
+import com.impostor.app.ui.screens.GameFlowSetup
 import com.impostor.app.ui.screens.ImpostorCountScreen
 import com.impostor.app.ui.screens.OnboardingScreen
 import com.impostor.app.ui.screens.PLAYER_AVATARS
@@ -28,6 +31,8 @@ import com.impostor.app.ui.screens.TurnPlayerUi
 import com.impostor.library.domain.enums.GameModeType
 import com.impostor.library.domain.enums.RoleType
 import kotlinx.coroutines.delay
+import java.io.File
+import java.net.URI
 
 private enum class AppDestination {
     SPLASH,
@@ -42,6 +47,12 @@ private enum class AppDestination {
 @Composable
 @Suppress("LongMethod", "CyclomaticComplexMethod")
 fun ImpostorApp() {
+    val appContext = LocalContext.current.applicationContext
+    val preferences = remember(appContext) {
+        appContext.getSharedPreferences("impostor-preferences", android.content.Context.MODE_PRIVATE)
+    }
+    val sessionStore = remember(appContext) { GameSessionStore(appContext) }
+    var savedLaunch by remember { mutableStateOf(sessionStore.readLaunch()) }
     var destination by rememberSaveable { mutableStateOf(AppDestination.SPLASH) }
     var onboardingPage by rememberSaveable { mutableIntStateOf(0) }
     var selectedMode by rememberSaveable { mutableStateOf<GameModeType?>(null) }
@@ -53,12 +64,13 @@ fun ImpostorApp() {
     var playerNicknames by rememberSaveable { mutableStateOf(emptyList<String>()) }
     var playerAvatarIndices by rememberSaveable { mutableStateOf(emptyList<Int>()) }
     var gameSessionKey by rememberSaveable { mutableStateOf(java.util.UUID.randomUUID().toString()) }
-    val playerPhotos = remember { mutableStateMapOf<Int, Bitmap>() }
+    var playerPhotoUris by rememberSaveable { mutableStateOf(emptyList<String>()) }
 
     LaunchedEffect(destination) {
         if (destination == AppDestination.SPLASH) {
             delay(SPLASH_DURATION_MILLIS)
-            destination = AppDestination.ONBOARDING
+            destination = if (preferences.getBoolean("onboarding-complete", false))
+                AppDestination.HOME else AppDestination.ONBOARDING
         }
     }
 
@@ -68,9 +80,15 @@ fun ImpostorApp() {
             AppDestination.ONBOARDING -> OnboardingScreen(
                 pageIndex = onboardingPage,
                 onNext = {
-                    if (onboardingPage < LAST_ONBOARDING_PAGE) onboardingPage++ else destination = AppDestination.HOME
+                    if (onboardingPage < LAST_ONBOARDING_PAGE) onboardingPage++ else {
+                        preferences.edit().putBoolean("onboarding-complete", true).apply()
+                        destination = AppDestination.HOME
+                    }
                 },
-                onSkip = { destination = AppDestination.HOME }
+                onSkip = {
+                    preferences.edit().putBoolean("onboarding-complete", true).apply()
+                    destination = AppDestination.HOME
+                }
             )
             AppDestination.HOME -> HomeScreen(
                 selectedMode = selectedMode,
@@ -78,7 +96,27 @@ fun ImpostorApp() {
                     selectedMode = it
                     if (it != GameModeType.CLASSIC) mrWhiteCount = 0
                 },
-                onContinue = { destination = AppDestination.PLAYER_COUNT },
+                onContinue = {
+                    playerNicknames = emptyList()
+                    playerAvatarIndices = emptyList()
+                    playerPhotoUris = emptyList()
+                    impostorCount = DEFAULT_IMPOSTOR_COUNT
+                    mrWhiteCount = 0
+                    destination = AppDestination.PLAYER_COUNT
+                },
+                onResume = savedLaunch?.let { launch ->
+                    {
+                        selectedMode = launch.setup.mode
+                        impostorCount = launch.setup.impostors
+                        mrWhiteCount = launch.setup.whites
+                        playerCount = launch.setup.players.size
+                        playerNicknames = launch.setup.players.map { it.name }
+                        playerAvatarIndices = launch.setup.players.map { PLAYER_AVATARS.indexOf(it.avatarRes) }
+                        playerPhotoUris = launch.setup.players.map { it.photoUri.orEmpty() }
+                        gameSessionKey = launch.key
+                        destination = AppDestination.PLAYER_TURN
+                    }
+                },
                 modifier = Modifier.safeDrawingPadding()
             )
             AppDestination.PLAYER_COUNT -> PlayerCountScreen(
@@ -98,7 +136,8 @@ fun ImpostorApp() {
                     playerIndex = currentPlayerIndex,
                     nickname = playerNicknames.getOrElse(currentPlayerIndex) { "" },
                     avatarRes = PLAYER_AVATARS[playerAvatarIndices.getOrElse(currentPlayerIndex) { 0 }],
-                    photo = playerPhotos[currentPlayerIndex]
+                    photo = playerPhotoUris.getOrNull(currentPlayerIndex)?.takeIf(String::isNotBlank)
+                        ?.let { remember(it) { loadPlayerPhoto(it) } }
                 ),
                 callbacks = PlayerNameCallbacks(
                     onNicknameChange = { nickname ->
@@ -122,7 +161,11 @@ fun ImpostorApp() {
                         }
                     }
                 ),
-                onPhotoTaken = { playerPhotos[currentPlayerIndex] = it },
+                onPhotoTaken = { uri ->
+                    playerPhotoUris = List(playerCount) { index ->
+                        if (index == currentPlayerIndex) uri else playerPhotoUris.getOrNull(index).orEmpty()
+                    }
+                },
                 modifier = Modifier
             )
             AppDestination.IMPOSTOR_COUNT -> ImpostorCountScreen(
@@ -141,6 +184,14 @@ fun ImpostorApp() {
                 onContinue = {
                     currentPlayerIndex = 0
                     gameSessionKey = java.util.UUID.randomUUID().toString()
+                    val players = playerNicknames.mapIndexed { index, name ->
+                        TurnPlayerUi(name, PLAYER_AVATARS[playerAvatarIndices[index]],
+                            photoUri = playerPhotoUris.getOrNull(index)?.takeIf(String::isNotBlank))
+                    }
+                    val launchSetup = GameFlowSetup(requireNotNull(selectedMode),
+                        impostorCount, mrWhiteCount, players)
+                    sessionStore.saveLaunch(gameSessionKey, launchSetup)
+                    savedLaunch = sessionStore.readLaunch()
                     destination = AppDestination.PLAYER_TURN
                 },
                 modifier = Modifier
@@ -150,13 +201,18 @@ fun ImpostorApp() {
                     TurnPlayerUi(
                         name = nickname,
                         avatarRes = PLAYER_AVATARS[playerAvatarIndices[index]],
-                        photo = playerPhotos[index]
+                        photo = playerPhotoUris.getOrNull(index)?.takeIf(String::isNotBlank)
+                            ?.let { remember(it) { loadPlayerPhoto(it) } },
+                        photoUri = playerPhotoUris.getOrNull(index)?.takeIf(String::isNotBlank)
                     )
                 }
                 com.impostor.app.ui.screens.GameFlowRoute(
                     setup = com.impostor.app.ui.screens.GameFlowSetup(requireNotNull(selectedMode), impostorCount, mrWhiteCount, players),
                     sessionKey = gameSessionKey,
-                    onExit = { destination = AppDestination.HOME }
+                    onExit = {
+                        savedLaunch = sessionStore.readLaunch()
+                        destination = AppDestination.HOME
+                    }
                 )
             }
         }
@@ -168,6 +224,16 @@ private fun randomizedAvatars(playerCount: Int, previous: List<Int>): List<Int> 
     val unused = PLAYER_AVATARS.indices.filterNot(validPrevious::contains).shuffled()
     return (validPrevious + unused).take(playerCount)
 }
+
+private fun loadPlayerPhoto(uri: String): Bitmap? = runCatching {
+    val path = File(URI(uri)).absolutePath
+    val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+    BitmapFactory.decodeFile(path, bounds)
+    val largest = maxOf(bounds.outWidth, bounds.outHeight)
+    if (largest <= 0) return@runCatching null
+    val sample = (largest / 512).coerceAtLeast(1)
+    BitmapFactory.decodeFile(path, BitmapFactory.Options().apply { inSampleSize = sample })
+}.getOrNull()
 
 private const val SPLASH_DURATION_MILLIS = 1_200L
 private const val LAST_ONBOARDING_PAGE = 3
